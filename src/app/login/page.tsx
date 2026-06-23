@@ -49,7 +49,7 @@ export default function LoginPage() {
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.register("/sw.js").catch(console.error);
         }
-        window.location.href = data.user.isAdmin ? "/admin" : "/content";
+        window.location.href = data.user.isAdmin ? "/admin" : "/content/syncope-%D9%84%D8%A7%D8%A8";
       }
     } catch {
       setError("تعذر الاتصال بالسيرفر");
