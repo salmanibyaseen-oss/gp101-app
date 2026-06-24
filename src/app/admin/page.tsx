@@ -93,7 +93,7 @@ export default function AdminPage() {
         </div>
         <div className="flex gap-3">
           <a
-            href="/"
+            href="/content/syncope"
             className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg"
           >
             → الموقع
