@@ -31,11 +31,6 @@ export default function ContentLayout({ children }: { children: React.ReactNode 
                 لوحة التحكم
               </a>
             )}
-            <form method="POST" action="/api/auth/logout">
-              <button className="text-xs border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg">
-                خروج
-              </button>
-            </form>
           </div>
         </header>
         <main className="flex-1 overflow-auto">{children}</main>
