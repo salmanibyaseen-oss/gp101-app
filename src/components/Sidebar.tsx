@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Section } from "@/lib/content";
 
 const SECTION_ICONS: Record<string, string> = {
-  "Medicine الباطنه": "🫀",
+  "Medicine الباطنه": "🩺",
   "Surgery الجراحه": "🔪",
   "Pediatric الاطفال": "👶",
   "BGYN النساء": "🤰",
