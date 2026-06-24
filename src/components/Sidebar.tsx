@@ -171,7 +171,7 @@ export function Sidebar({ sections, isAdmin }: SidebarProps) {
         >
           خروج
         </button>
-        <div className="text-xs text-white/40">GP101 © 2024</div>
+        <div className="text-xs text-white/40">GP101 © 2026</div>
       </div>
     </div>
   );
