@@ -2,6 +2,7 @@
 export const dynamic = 'force-dynamic';
 import { Sidebar } from "@/components/Sidebar";
 import { OnlineStatus } from "@/components/OnlineStatus";
+import { LogoutButton } from "@/components/LogoutButton";
 import { content } from "@/lib/content";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
@@ -15,7 +16,6 @@ export default function ContentLayout({ children }: { children: React.ReactNode 
       user = verifyToken(token);
     } catch {}
   }
-
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar sections={content.sections} isAdmin={user?.isAdmin} />
@@ -31,11 +31,7 @@ export default function ContentLayout({ children }: { children: React.ReactNode 
                 لوحة التحكم
               </a>
             )}
-            <form method="POST" action="/api/auth/logout">
-              <button className="text-xs border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg">
-                خروج
-              </button>
-            </form>
+            <LogoutButton />
           </div>
         </header>
         <main className="flex-1 overflow-auto">{children}</main>
