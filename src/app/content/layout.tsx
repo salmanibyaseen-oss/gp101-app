@@ -2,11 +2,9 @@
 export const dynamic = 'force-dynamic';
 import { Sidebar } from "@/components/Sidebar";
 import { OnlineStatus } from "@/components/OnlineStatus";
-import { LogoutButton } from "@/components/LogoutButton";
 import { content } from "@/lib/content";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
-
 export default function ContentLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = cookies();
   const token = cookieStore.get("auth_token")?.value;
@@ -27,11 +25,16 @@ export default function ContentLayout({ children }: { children: React.ReactNode 
               👨‍⚕️ {user?.email?.split("@")[0] || ""}
             </span>
             {user?.isAdmin && (
-              <a href="/admin" className="text-xs bg-[#1e3a5f] text-white px-3 py-1.5 rounded-lg">
+              <a href="/admin" className="text-xs bg-[
+#1e3a5f] text-white px-3 py-1.5 rounded-lg">
                 لوحة التحكم
               </a>
             )}
-            <LogoutButton />
+            <form method="POST" action="/api/auth/logout">
+              <button className="text-xs border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg">
+                خروج
+              </button>
+            </form>
           </div>
         </header>
         <main className="flex-1 overflow-auto">{children}</main>
