@@ -98,11 +98,15 @@ export default function AdminPage() {
           >
             → الموقع
           </a>
-          <form method="POST" action="/api/auth/logout">
-            <button className="text-sm border border-white/30 hover:bg-white/10 px-3 py-1.5 rounded-lg">
-              خروج
-            </button>
-          </form>
+          <button
+  onClick={async () => {
+    await fetch("/api/auth/logout", { method: "POST" });
+    window.location.href = "/login";
+  }}
+  className="text-sm border border-white/30 hover:bg-white/10 px-3 py-1.5 rounded-lg"
+>
+  خروج
+</button>
         </div>
       </header>
 
