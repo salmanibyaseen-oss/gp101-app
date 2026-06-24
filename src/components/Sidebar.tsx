@@ -161,8 +161,17 @@ export function Sidebar({ sections, isAdmin }: SidebarProps) {
         ))}
       </nav>
 
-      <div className="p-3 border-t border-white/10 text-xs text-white/40 text-center">
-        GP101 © 2024
+      <div className="p-3 border-t border-white/10 flex flex-col items-center gap-2">
+        <button
+          onClick={async () => {
+            await fetch("/api/auth/logout", { method: "POST" });
+            window.location.href = "/login";
+          }}
+          className="text-xs border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-100"
+        >
+          خروج
+        </button>
+        <div className="text-xs text-white/40">GP101 © 2024</div>
       </div>
     </div>
   );
