@@ -1,4 +1,3 @@
-// src/lib/content.ts
 import contentData from "../../data/content.json";
 
 export interface Topic {
@@ -25,14 +24,17 @@ export const content = contentData as ContentData;
 
 export function getAllSlugs(): string[] {
   return content.sections.flatMap((s) =>
-    s.subsections.flatMap((sub) => sub.topics.map((t) => t.slug))
+    s.subsections.flatMap((sub) => sub.topics.map((t) => encodeURIComponent(t.slug)))
   );
 }
 
 export function getTopicBySlug(slug: string): Topic | null {
+  const decoded = decodeURIComponent(slug);
   for (const section of content.sections) {
     for (const sub of section.subsections) {
-      const topic = sub.topics.find((t) => t.slug === slug);
+      const topic = sub.topics.find(
+        (t) => t.slug === decoded || t.slug === slug
+      );
       if (topic) return topic;
     }
   }
@@ -44,9 +46,12 @@ export function getTopicContext(slug: string): {
   subsection: Subsection;
   topic: Topic;
 } | null {
+  const decoded = decodeURIComponent(slug);
   for (const section of content.sections) {
     for (const sub of section.subsections) {
-      const topic = sub.topics.find((t) => t.slug === slug);
+      const topic = sub.topics.find(
+        (t) => t.slug === decoded || t.slug === slug
+      );
       if (topic) return { section, subsection: sub, topic };
     }
   }
