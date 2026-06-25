@@ -50,7 +50,7 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
           )}
 
           {/* Content */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6" dir="ltr">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
