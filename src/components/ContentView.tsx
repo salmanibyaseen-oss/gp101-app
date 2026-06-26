@@ -27,7 +27,7 @@ function CollapsibleSection({
   children,
   color,
   level = 2,
-  defaultOpen = true,
+  defaultOpen = false,
 }: {
   title: React.ReactNode;
   children: React.ReactNode;
