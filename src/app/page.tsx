@@ -189,8 +189,7 @@ function PhoneMockup() {
 
 // ── Main ──────────────────────────────────────────────────────────────────
 export default function GP101Landing() {
-  const [hovered, setHovered] = useState(null);
-
+  const [hovered, setHovered] = useState<string | null>(null);
   const primaryBtn = {
     padding: "14px 28px", borderRadius: 12, fontWeight: 700,
     fontSize: 15, cursor: "pointer", border: "none",
