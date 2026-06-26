@@ -162,6 +162,12 @@ export function Sidebar({ sections, isAdmin }: SidebarProps) {
       </nav>
 
       <div className="p-3 border-t border-white/10 flex flex-col items-center gap-2">
+        <a
+          href="/dashboard"
+          className="w-full text-center text-xs text-white/80 px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 transition-colors"
+        >
+          🏠 الرئيسية
+        </a>
         <button
           onClick={async () => {
             await fetch("/api/auth/logout", { method: "POST" });
