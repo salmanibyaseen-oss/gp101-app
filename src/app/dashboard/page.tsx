@@ -8,7 +8,7 @@ const SECTION_ICONS: Record<string, string> = {
   "Medicine الباطنه": "🩺",
   "Surgery الجراحه": "🔪",
   "Pediatric الاطفال": "👶",
-  "BGYN النساء": "🤰",
+  "OBGYN النساء": "🤰",
   "ENT انف واذن": "👂",
   "Ophthalmology عيون": "👁️",
   "Dermatology جلديه": "🩹",
