@@ -262,8 +262,7 @@ export default function DashboardPage() {
             </button>
             {"📱 أضف GP101 لشاشة جوالك زي تطبيق: "}
             {isIOS
-              ? "اضغط على زرار Share ⬆️ في Safari ← ثم Add to Home Screen"
-              : "افتح قائمة المتصفح ⋮ ← ثم Add to Home Screen أو Install App"}
+              ? "اضغط على زرار Share ⬆️ في Safari ← ثم Add to Home Screen"              : "افتح قائمة المتصفح ⋮ ← ثم Add to Home Screen أو Install App"}
           </div>
         )}
       </div>
