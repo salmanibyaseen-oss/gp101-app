@@ -1,7 +1,6 @@
 "use client";
 // src/app/login/page.tsx
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 async function getFingerprint(): Promise<string> {
   const ua = navigator.userAgent;
@@ -17,35 +16,27 @@ async function getFingerprint(): Promise<string> {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPass, setShowPass] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-
     try {
       const fingerprint = await getFingerprint();
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          fingerprint,
-          userAgent: navigator.userAgent,
-        }),
+        body: JSON.stringify({ email, password, fingerprint, userAgent: navigator.userAgent }),
       });
-
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "حدث خطأ");
       } else {
-        // Register service worker
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.register("/sw.js").catch(console.error);
         }
@@ -59,65 +50,162 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#1e3a5f] to-[#0ea5e9] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
+    <div
+      dir="rtl"
+      style={{
+        minHeight: "100vh",
+        background: "linear-gradient(135deg, #0B1E3D 0%, #0a3d4a 60%, #0E7C86 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+        fontFamily: "'Segoe UI', Arial, sans-serif",
+      }}
+    >
+      {/* Card */}
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 400,
+          background: "rgba(255,255,255,0.05)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 24,
+          padding: "40px 36px",
+          backdropFilter: "blur(20px)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.4)",
+        }}
+      >
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-[#1e3a5f] rounded-2xl mb-4">
-            <span className="text-white text-2xl font-bold">GP</span>
+        <div style={{ textAlign: "center", marginBottom: 36 }}>
+          <div
+            style={{
+              width: 64, height: 64, borderRadius: 18,
+              background: "linear-gradient(135deg, #0E7C86, #0B1E3D)",
+              border: "2px solid rgba(255,255,255,0.2)",
+              display: "inline-flex", alignItems: "center", justifyContent: "center",
+              marginBottom: 16,
+              boxShadow: "0 8px 24px rgba(14,124,134,0.4)",
+            }}
+          >
+            <span style={{ fontSize: 22, fontWeight: 900, color: "#F4A723", letterSpacing: 1 }}>GP</span>
           </div>
-          <h1 className="text-2xl font-bold text-[#1e3a5f]">GP101</h1>
-          <p className="text-gray-500 text-sm mt-1">مرجع الطبيب العام وطبيب الامتياز</p>
+          <div style={{ fontSize: 26, fontWeight: 900, color: "#fff", letterSpacing: 0.5 }}>
+            GP<span style={{ color: "#F4A723" }}>101</span>
+          </div>
+          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", marginTop: 6 }}>
+            مرجع الطبيب العام وطبيب الامتياز
+          </div>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+        {/* Form */}
+        <form onSubmit={handleLogin}>
+          {/* Email */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)", marginBottom: 8 }}>
               البريد الإلكتروني
             </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9] text-right"
               placeholder="example@email.com"
               required
               dir="ltr"
+              style={{
+                width: "100%", padding: "12px 16px",
+                background: "rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.15)",
+                borderRadius: 12, color: "#fff", fontSize: 14,
+                outline: "none", boxSizing: "border-box",
+                transition: "border 0.2s",
+              }}
+              onFocus={(e) => { e.target.style.border = "1px solid #0E7C86"; e.target.style.background = "rgba(255,255,255,0.12)"; }}
+              onBlur={(e) => { e.target.style.border = "1px solid rgba(255,255,255,0.15)"; e.target.style.background = "rgba(255,255,255,0.08)"; }}
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+          {/* Password */}
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.7)", marginBottom: 8 }}>
               كلمة المرور
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]"
-              placeholder="••••••••"
-              required
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPass ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                style={{
+                  width: "100%", padding: "12px 44px 12px 16px",
+                  background: "rgba(255,255,255,0.08)",
+                  border: "1px solid rgba(255,255,255,0.15)",
+                  borderRadius: 12, color: "#fff", fontSize: 14,
+                  outline: "none", boxSizing: "border-box",
+                  transition: "border 0.2s",
+                }}
+                onFocus={(e) => { e.target.style.border = "1px solid #0E7C86"; e.target.style.background = "rgba(255,255,255,0.12)"; }}
+                onBlur={(e) => { e.target.style.border = "1px solid rgba(255,255,255,0.15)"; e.target.style.background = "rgba(255,255,255,0.08)"; }}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                style={{
+                  position: "absolute", left: 12, top: "50%",
+                  transform: "translateY(-50%)",
+                  background: "none", border: "none", cursor: "pointer",
+                  fontSize: 16, opacity: 0.5, color: "#fff",
+                }}
+              >
+                {showPass ? "🙈" : "👁"}
+              </button>
+            </div>
           </div>
 
+          {/* Error */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+            <div
+              style={{
+                background: "rgba(239,68,68,0.15)",
+                border: "1px solid rgba(239,68,68,0.3)",
+                borderRadius: 10, padding: "10px 14px",
+                fontSize: 13, color: "#fca5a5",
+                marginBottom: 16, textAlign: "center",
+              }}
+            >
               ⚠️ {error}
             </div>
           )}
 
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-[#1e3a5f] text-white rounded-lg py-3 font-semibold hover:bg-[#2d5a9e] transition-colors disabled:opacity-60"
+            style={{
+              width: "100%",
+              padding: "14px",
+              background: loading
+                ? "rgba(14,124,134,0.5)"
+                : "linear-gradient(135deg, #0E7C86, #0a5f68)",
+              border: "none", borderRadius: 12,
+              color: "#fff", fontSize: 15, fontWeight: 700,
+              cursor: loading ? "not-allowed" : "pointer",
+              boxShadow: loading ? "none" : "0 4px 20px rgba(14,124,134,0.4)",
+              transition: "all 0.2s",
+              letterSpacing: 0.5,
+            }}
           >
-            {loading ? "جاري الدخول..." : "دخول"}
+            {loading ? (
+              <span style={{ opacity: 0.7 }}>جاري الدخول...</span>
+            ) : (
+              "دخول →"
+            )}
           </button>
         </form>
 
-        <p className="text-center text-xs text-gray-400 mt-6">
+        <div style={{ textAlign: "center", marginTop: 24, fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
           للحصول على حساب، تواصل مع المسؤول
-        </p>
+        </div>
       </div>
     </div>
   );
