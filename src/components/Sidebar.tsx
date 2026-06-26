@@ -15,6 +15,17 @@ const SECTION_ICONS: Record<string, string> = {
   "Toxicology سموم": "☠️",
 };
 
+const SECTION_COLORS: Record<string, string> = {
+  "Medicine الباطنه": "#e53935",
+  "Surgery الجراحه": "#1e88e5",
+  "Pediatric الاطفال": "#8e24aa",
+  "BGYN النساء": "#d81b60",
+  "ENT انف واذن": "#fb8c00",
+  "Ophthalmology عيون": "#00acc1",
+  "Dermatology جلديه": "#43a047",
+  "Toxicology سموم": "#6d4c41",
+};
+
 interface SidebarProps {
   sections: Section[];
   isAdmin?: boolean;
@@ -36,16 +47,8 @@ export function Sidebar({ sections, isAdmin }: SidebarProps) {
     for (const section of sections) {
       for (const sub of section.subsections) {
         if (sub.topics.some((t) => t.slug === currentSlug)) {
-          setOpenSections((s) => {
-            const n = new Set(s);
-            n.add(section.name);
-            return n;
-          });
-          setOpenSubs((s) => {
-            const n = new Set(s);
-            n.add(sub.name + section.name);
-            return n;
-          });
+          setOpenSections((s) => { const n = new Set(s); n.add(section.name); return n; });
+          setOpenSubs((s) => { const n = new Set(s); n.add(sub.name + section.name); return n; });
         }
       }
     }
@@ -84,87 +87,164 @@ export function Sidebar({ sections, isAdmin }: SidebarProps) {
     : sections;
 
   const sidebarContent = (
-    <div className="flex flex-col h-full bg-[#1e3a5f] text-white">
-      <div className="p-4 border-b border-white/10">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center font-bold text-sm">
-            GP
+    <div
+      className="flex flex-col h-full text-white"
+      style={{ background: "linear-gradient(180deg, #0B1E3D 0%, #0a3d4a 60%, #0E7C86 100%)" }}
+    >
+      {/* Logo */}
+      <div style={{ padding: "18px 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+          <div style={{
+            width: 36, height: 36, borderRadius: 10,
+            background: "rgba(255,255,255,0.15)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontWeight: 900, fontSize: 13, letterSpacing: 0.5,
+            border: "1px solid rgba(255,255,255,0.2)",
+          }}>
+            <span style={{ color: "#F4A723" }}>GP</span>
           </div>
           <div>
-            <div className="font-bold text-sm">GP101</div>
-            <div className="text-xs text-white/60">مرجع الممارس العام</div>
+            <div style={{ fontWeight: 800, fontSize: 15, letterSpacing: 0.3 }}>GP101</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>مرجع الممارس العام</div>
           </div>
         </div>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="🔍 بحث..."
-          className="w-full bg-white/10 text-white placeholder-white/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:bg-white/20"
-        />
+
+        {/* Search */}
+        <div style={{ position: "relative" }}>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="بحث في المواضيع..."
+            style={{
+              width: "100%", padding: "9px 36px 9px 12px",
+              background: "rgba(255,255,255,0.1)",
+              border: "1px solid rgba(255,255,255,0.15)",
+              borderRadius: 10, color: "#fff", fontSize: 12,
+              outline: "none", boxSizing: "border-box",
+            }}
+          />
+          <span style={{
+            position: "absolute", right: 10, top: "50%",
+            transform: "translateY(-50%)", fontSize: 14, opacity: 0.5,
+          }}>🔍</span>
+        </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto py-2">
-        {filtered.map((section) => (
-          <div key={section.name}>
-            <button
-              onClick={() => toggleSection(section.name)}
-              className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-white/90 hover:bg-white/10 transition-colors"
-            >
-              <span>{SECTION_ICONS[section.name] || "📋"}</span>
-              <span className="flex-1 text-right">{section.name}</span>
-              <span className="text-white/50 text-xs">
-                {openSections.has(section.name) ? "▲" : "▼"}
-              </span>
-            </button>
+      {/* Nav */}
+      <nav style={{ flex: 1, overflowY: "auto", padding: "8px 0" }}>
+        {filtered.map((section) => {
+          const color = SECTION_COLORS[section.name] || "#0E7C86";
+          const isOpen = openSections.has(section.name);
+          return (
+            <div key={section.name}>
+              {/* Section header */}
+              <button
+                onClick={() => toggleSection(section.name)}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center",
+                  gap: 10, padding: "10px 14px",
+                  background: isOpen ? "rgba(255,255,255,0.07)" : "transparent",
+                  border: "none", cursor: "pointer",
+                  borderRight: isOpen ? `3px solid ${color}` : "3px solid transparent",
+                  transition: "all 0.15s",
+                }}
+              >
+                <span style={{
+                  width: 30, height: 30, borderRadius: 8,
+                  background: isOpen ? color : "rgba(255,255,255,0.1)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 15, flexShrink: 0,
+                  transition: "background 0.15s",
+                }}>
+                  {SECTION_ICONS[section.name] || "📋"}
+                </span>
+                <span style={{
+                  flex: 1, textAlign: "right", fontSize: 13,
+                  fontWeight: 700, color: isOpen ? "#fff" : "rgba(255,255,255,0.75)",
+                }}>
+                  {section.name}
+                </span>
+                <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", flexShrink: 0 }}>
+                  {isOpen ? "▲" : "▼"}
+                </span>
+              </button>
 
-            {openSections.has(section.name) && (
-              <div>
-                {section.subsections.map((sub) => {
-                  const subKey = sub.name + section.name;
-                  return (
-                    <div key={sub.name}>
-                      <button
-                        onClick={() => toggleSub(subKey)}
-                        className="w-full flex items-center gap-2 px-6 py-2 text-xs font-semibold text-[#0ea5e9] hover:bg-white/5 transition-colors"
-                      >
-                        <span className="flex-1 text-right">{sub.name}</span>
-                        <span className="text-white/30">
-                          {openSubs.has(subKey) ? "▲" : "▼"}
-                        </span>
-                      </button>
+              {/* Subsections */}
+              {isOpen && (
+                <div style={{ background: "rgba(0,0,0,0.15)" }}>
+                  {section.subsections.map((sub) => {
+                    const subKey = sub.name + section.name;
+                    const subOpen = openSubs.has(subKey);
+                    return (
+                      <div key={sub.name}>
+                        <button
+                          onClick={() => toggleSub(subKey)}
+                          style={{
+                            width: "100%", display: "flex", alignItems: "center",
+                            gap: 6, padding: "7px 14px 7px 28px",
+                            background: "transparent", border: "none", cursor: "pointer",
+                          }}
+                        >
+                          <span style={{
+                            flex: 1, textAlign: "right", fontSize: 11,
+                            fontWeight: 600, color: color,
+                          }}>
+                            {sub.name}
+                          </span>
+                          <span style={{ fontSize: 9, color: "rgba(255,255,255,0.25)" }}>
+                            {subOpen ? "▲" : "▼"}
+                          </span>
+                        </button>
 
-                      {openSubs.has(subKey) && (
-                        <div>
-                          {sub.topics.map((topic) => (
-                            <Link
-                              key={topic.slug}
-                              href={`/content/${topic.slug}`}
-                              onClick={() => setSidebarOpen(false)}
-                              className={`block px-8 py-1.5 text-xs transition-colors hover:bg-white/10 ${
-                                currentSlug === topic.slug
-                                  ? "bg-[#0ea5e9]/20 text-[#0ea5e9] border-r-2 border-[#0ea5e9]"
-                                  : "text-white/70"
-                              }`}
-                            >
-                              {topic.title}
-                            </Link>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        ))}
+                        {subOpen && (
+                          <div>
+                            {sub.topics.map((topic) => {
+                              const active = currentSlug === topic.slug;
+                              return (
+                                <Link
+                                  key={topic.slug}
+                                  href={`/content/${topic.slug}`}
+                                  onClick={() => setSidebarOpen(false)}
+                                  style={{
+                                    display: "block", padding: "6px 14px 6px 36px",
+                                    fontSize: 11, textDecoration: "none",
+                                    color: active ? "#fff" : "rgba(255,255,255,0.6)",
+                                    background: active ? `${color}25` : "transparent",
+                                    borderRight: active ? `2px solid ${color}` : "2px solid transparent",
+                                    transition: "all 0.1s",
+                                  }}
+                                >
+                                  {topic.title}
+                                </Link>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
 
-      <div className="p-3 border-t border-white/10 flex flex-col items-center gap-2">
+      {/* Footer */}
+      <div style={{
+        padding: "12px", borderTop: "1px solid rgba(255,255,255,0.08)",
+        display: "flex", flexDirection: "column", gap: 8,
+      }}>
         <a
           href="/dashboard"
-          className="w-full text-center text-xs text-white/80 px-3 py-1.5 rounded-lg border border-white/20 hover:bg-white/10 transition-colors"
+          style={{
+            display: "block", textAlign: "center", textDecoration: "none",
+            fontSize: 12, color: "rgba(255,255,255,0.8)",
+            padding: "8px", borderRadius: 8,
+            background: "rgba(255,255,255,0.1)",
+            border: "1px solid rgba(255,255,255,0.15)",
+          }}
         >
           🏠 الرئيسية
         </a>
@@ -173,11 +253,19 @@ export function Sidebar({ sections, isAdmin }: SidebarProps) {
             await fetch("/api/auth/logout", { method: "POST" });
             window.location.href = "/login";
           }}
-          className="text-xs border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg hover:bg-gray-100"
+          style={{
+            fontSize: 12, color: "rgba(255,255,255,0.5)",
+            padding: "7px", borderRadius: 8,
+            background: "transparent",
+            border: "1px solid rgba(255,255,255,0.1)",
+            cursor: "pointer",
+          }}
         >
           خروج
         </button>
-        <div className="text-xs text-white/40">GP101 © 2026</div>
+        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", textAlign: "center" }}>
+          GP101 © 2026
+        </div>
       </div>
     </div>
   );
@@ -186,7 +274,8 @@ export function Sidebar({ sections, isAdmin }: SidebarProps) {
     <>
       <button
         onClick={() => setSidebarOpen(true)}
-        className="lg:hidden fixed top-3 right-3 z-50 bg-[#1e3a5f] text-white p-2 rounded-lg"
+        style={{ background: "#0B1E3D" }}
+        className="lg:hidden fixed top-3 right-3 z-50 text-white p-2 rounded-lg"
       >
         ☰
       </button>
