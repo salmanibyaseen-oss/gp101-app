@@ -203,8 +203,10 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div style={{ textAlign: "center", marginTop: 24, fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
-          للحصول على حساب، تواصل مع المسؤول
+        <div style={{ textAlign: "center", marginTop: 24 }}>
+          <a href="/register" style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", textDecoration: "none" }}>
+            ليس لديك حساب؟ اطلب اشتراك
+          </a>
         </div>
       </div>
     </div>
