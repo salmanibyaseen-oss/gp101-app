@@ -50,3 +50,12 @@ model Note {
 
   @@unique([userId, topicSlug])
 }
+
+model RegistrationRequest {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  status    String   @default("pending") // pending | approved | rejected
+  createdAt DateTime @default(now())
+}
