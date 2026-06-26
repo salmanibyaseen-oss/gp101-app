@@ -254,7 +254,7 @@ export default function Home() {
             <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 2, color: COLORS.teal, textTransform: "uppercase" }}>📚 كتيب مجاني مرفق لفتره محدوده</span>
             <h2 style={{ fontSize: 24, fontWeight: 800, margin: "10px 0 8px", color: COLORS.navy }}>Clinical Examination E-guide</h2>
             <p style={{ fontSize: 14, color: "#0d47a1", fontWeight: 600, background: "#e3f2fd", borderRadius: 8, padding: "6px 12px", display: "inline-block", marginBottom: 12 }}>
-              بقلم: د. سلمان إبراهيم ياسين — جامعة الدلتا
+              بقلم: د. سلمان إبراهيم ياسين
             </p>
             <p style={{ fontSize: 14, color: COLORS.gray, lineHeight: 1.7, marginBottom: 16 }}>
               ملف PDF مُصمَّم باحترافية يضم أكثر من <strong>10 فحوصات إكلينيكية</strong> مختصرة ومنهجية — تقدر تطبقها في المستشفى أو أثناء الامتحانات العملية. يشمل: Cardiac، Respiratory، Abdominal، Neurological (CN/UL/LL)، Musculoskeletal، GYN، Obstetrics، Pediatrics وغيرها.
