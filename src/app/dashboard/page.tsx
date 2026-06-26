@@ -19,7 +19,7 @@ const SECTION_COLORS: Record<string, string> = {
   "Medicine الباطنه": "#c62828",
   "Surgery الجراحه": "#1565c0",
   "Pediatric الاطفال": "#6a1b9a",
-  "OBGYN النساء": "#00695c",
+  "BGYN النساء": "#00695c",
   "ENT انف واذن": "#e65100",
   "Ophthalmology عيون": "#0277bd",
   "Dermatology جلديه": "#558b2f",
