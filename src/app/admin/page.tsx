@@ -26,18 +26,9 @@ export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<"stats" | "users" | "add">("stats");
   const [loading, setLoading] = useState(true);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  const [newUser, setNewUser] = useState({ email: "", name: "", password: "", expiresAt: "" });
 
-  // New user form
-  const [newUser, setNewUser] = useState({
-    email: "",
-    name: "",
-    password: "",
-    expiresAt: "",
-  });
-
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
@@ -83,91 +74,116 @@ export default function AdminPage() {
     fetchData();
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-[#1e3a5f] text-white px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold">لوحة تحكم GP101</h1>
-          <p className="text-white/60 text-xs">إدارة المشتركين والأجهزة</p>
-        </div>
-        <div className="flex gap-3">
-          <a
-            href="/content/syncope"
-            className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg"
-          >
-            → الموقع
-          </a>
-          <button
-  onClick={async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/login";
-  }}
-  className="text-sm border border-white/30 hover:bg-white/10 px-3 py-1.5 rounded-lg"
->
-  خروج
-</button>
-        </div>
-      </header>
+  const tabs = [
+    { key: "stats", label: "إحصائيات", icon: "📊" },
+    { key: "users", label: `المستخدمون (${users.length})`, icon: "👥" },
+    { key: "add", label: "إضافة مستخدم", icon: "➕" },
+  ];
 
-      {/* Tabs */}
-      <div className="bg-white border-b border-gray-200 px-6">
-        <div className="flex gap-1">
-          {[
-            { key: "stats", label: "📊 إحصائيات" },
-            { key: "users", label: `👥 المستخدمون (${users.length})` },
-            { key: "add", label: "➕ إضافة مستخدم" },
-          ].map((tab) => (
+  return (
+    <div dir="rtl" style={{ minHeight: "100vh", background: "#f6f9fc", fontFamily: "'Segoe UI', Arial, sans-serif" }}>
+
+      {/* Header */}
+      <header style={{ background: "linear-gradient(135deg, #0B1E3D 0%, #0a3d4a 60%, #0E7C86 100%)", padding: "16px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: "rgba(255,255,255,0.15)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontWeight: 900, fontSize: 14, border: "1px solid rgba(255,255,255,0.2)",
+            }}>
+              <span style={{ color: "#F4A723" }}>GP</span>
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 16, color: "#fff" }}>لوحة تحكم GP101</div>
+              <div style={{ fontSize: 11, color: "rgba(255,255,255,0.5)" }}>إدارة المشتركين والأجهزة</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <a href="/dashboard" style={{
+              fontSize: 12, color: "rgba(255,255,255,0.8)",
+              padding: "6px 14px", borderRadius: 8,
+              background: "rgba(255,255,255,0.1)",
+              border: "1px solid rgba(255,255,255,0.2)",
+              textDecoration: "none",
+            }}>
+              🏠 الموقع
+            </a>
+            <button
+              onClick={async () => {
+                await fetch("/api/auth/logout", { method: "POST" });
+                window.location.href = "/login";
+              }}
+              style={{
+                fontSize: 12, color: "rgba(255,255,255,0.7)",
+                padding: "6px 14px", borderRadius: 8,
+                background: "transparent",
+                border: "1px solid rgba(255,255,255,0.15)",
+                cursor: "pointer",
+              }}
+            >
+              خروج
+            </button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", gap: 4, marginTop: 16 }}>
+          {tabs.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
-              className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === tab.key
-                  ? "border-[#0ea5e9] text-[#0ea5e9]"
-                  : "border-transparent text-gray-600 hover:text-gray-900"
-              }`}
+              style={{
+                padding: "8px 16px", borderRadius: "8px 8px 0 0",
+                fontSize: 12, fontWeight: 600, cursor: "pointer",
+                border: "none", transition: "all 0.15s",
+                background: activeTab === tab.key ? "#fff" : "rgba(255,255,255,0.1)",
+                color: activeTab === tab.key ? "#0B1E3D" : "rgba(255,255,255,0.7)",
+              }}
             >
-              {tab.label}
+              {tab.icon} {tab.label}
             </button>
           ))}
         </div>
-      </div>
+      </header>
 
-      <div className="p-6">
+      {/* Content */}
+      <div style={{ padding: 24 }}>
         {loading ? (
-          <div className="text-center py-10 text-gray-500">جاري التحميل...</div>
+          <div style={{ textAlign: "center", padding: 60, color: "#9e9e9e" }}>جاري التحميل...</div>
         ) : (
           <>
             {/* Stats Tab */}
             {activeTab === "stats" && stats && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <StatCard label="إجمالي المشتركين" value={stats.totalUsers} color="blue" icon="👥" />
-                  <StatCard label="مشتركون نشطون" value={stats.activeUsers} color="green" icon="✅" />
-                  <StatCard label="منتهي الاشتراك" value={stats.expiredUsers} color="red" icon="⏰" />
+              <div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 24 }}>
+                  <StatCard label="إجمالي المشتركين" value={stats.totalUsers} color="#0E7C86" icon="👥" />
+                  <StatCard label="مشتركون نشطون" value={stats.activeUsers} color="#27ae60" icon="✅" />
+                  <StatCard label="منتهي الاشتراك" value={stats.expiredUsers} color="#e53935" icon="⏰" />
                 </div>
 
-                <div className="bg-white rounded-xl border border-gray-200 p-5">
-                  <h2 className="font-bold text-gray-800 mb-4">آخر عمليات الدخول</h2>
+                <div style={{ background: "#fff", borderRadius: 16, padding: 20, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: "#0B1E3D", marginBottom: 16 }}>
+                    آخر عمليات الدخول
+                  </div>
                   {stats.recentLogins.length === 0 ? (
-                    <p className="text-gray-500 text-sm">لا يوجد</p>
+                    <p style={{ color: "#9e9e9e", fontSize: 13 }}>لا يوجد</p>
                   ) : (
-                    <div className="space-y-2">
-                      {stats.recentLogins.map((u, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"
-                        >
-                          <div>
-                            <div className="text-sm font-medium">{u.name}</div>
-                            <div className="text-xs text-gray-500">{u.email}</div>
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {new Date(u.lastLogin).toLocaleString("ar-EG")}
-                          </div>
+                    stats.recentLogins.map((u, i) => (
+                      <div key={i} style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        padding: "10px 0", borderBottom: i < stats.recentLogins.length - 1 ? "1px solid #f0f4f8" : "none",
+                      }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: "#1f2937" }}>{u.name}</div>
+                          <div style={{ fontSize: 11, color: "#9e9e9e" }}>{u.email}</div>
                         </div>
-                      ))}
-                    </div>
+                        <div style={{ fontSize: 11, color: "#9e9e9e" }}>
+                          {new Date(u.lastLogin).toLocaleString("ar-EG")}
+                        </div>
+                      </div>
+                    ))
                   )}
                 </div>
               </div>
@@ -175,173 +191,150 @@ export default function AdminPage() {
 
             {/* Users Tab */}
             {activeTab === "users" && (
-              <div className="space-y-3">
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {users.length === 0 ? (
-                  <div className="text-center py-10 text-gray-500">
-                    لا يوجد مستخدمون. أضف مستخدمًا جديدًا!
-                  </div>
+                  <div style={{ textAlign: "center", padding: 60, color: "#9e9e9e" }}>لا يوجد مستخدمون</div>
                 ) : (
-                  users.map((user) => (
-                    <div
-                      key={user.id}
-                      className="bg-white rounded-xl border border-gray-200 overflow-hidden"
-                    >
-                      <div
-                        className="flex items-center gap-4 p-4 cursor-pointer hover:bg-gray-50"
-                        onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
-                      >
-                        {/* Status indicator */}
+                  users.map((user) => {
+                    const isExpired = user.expiresAt && new Date(user.expiresAt) < new Date();
+                    const isHealthy = user.isActive && !isExpired;
+                    return (
+                      <div key={user.id} style={{
+                        background: "#fff", borderRadius: 14,
+                        boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
+                        overflow: "hidden",
+                        border: "1px solid #f0f4f8",
+                      }}>
                         <div
-                          className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                            user.isActive && (!user.expiresAt || new Date(user.expiresAt) > new Date())
-                              ? "bg-green-500"
-                              : "bg-red-400"
-                          }`}
-                        />
+                          onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 12,
+                            padding: "14px 16px", cursor: "pointer",
+                          }}
+                        >
+                          {/* Avatar */}
+                          <div style={{
+                            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                            background: isHealthy ? "#e8f5e9" : "#ffebee",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 16,
+                          }}>
+                            {isHealthy ? "👨‍⚕️" : "⚠️"}
+                          </div>
 
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-900 text-sm">{user.name}</div>
-                          <div className="text-xs text-gray-500">{user.email}</div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, fontSize: 13, color: "#0B1E3D" }}>{user.name}</div>
+                            <div style={{ fontSize: 11, color: "#9e9e9e" }}>{user.email}</div>
+                          </div>
+
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11, color: "#6B7A8D" }}>
+                            <span>📱 {user.devices.length}/3</span>
+                            {user.expiresAt && (
+                              <span style={{ color: isExpired ? "#e53935" : "#27ae60" }}>
+                                ⏰ {new Date(user.expiresAt).toLocaleDateString("ar-EG")}
+                              </span>
+                            )}
+                            <div style={{
+                              width: 8, height: 8, borderRadius: "50%",
+                              background: isHealthy ? "#27ae60" : "#e53935",
+                            }} />
+                          </div>
+                          <span style={{ color: "#9e9e9e", fontSize: 11 }}>{expandedUser === user.id ? "▲" : "▼"}</span>
                         </div>
 
-                        <div className="hidden sm:flex items-center gap-3 text-xs text-gray-500">
-                          <span>📱 {user.devices.length}/3 أجهزة</span>
-                          {user.expiresAt && (
-                            <span>
-                              ⏰ {new Date(user.expiresAt).toLocaleDateString("ar-EG")}
-                            </span>
-                          )}
-                          {user.lastLogin && (
-                            <span>
-                              🕐 {new Date(user.lastLogin).toLocaleDateString("ar-EG")}
-                            </span>
-                          )}
-                        </div>
-
-                        <span className="text-gray-400">{expandedUser === user.id ? "▲" : "▼"}</span>
-                      </div>
-
-                      {expandedUser === user.id && (
-                        <div className="border-t border-gray-100 p-4 bg-gray-50 space-y-4">
-                          {/* Devices */}
-                          <div>
-                            <div className="text-xs font-semibold text-gray-600 mb-2">
-                              الأجهزة المسجلة ({user.devices.length}/3)
-                            </div>
-                            {user.devices.length === 0 ? (
-                              <p className="text-xs text-gray-400">لا أجهزة مسجلة</p>
-                            ) : (
-                              <div className="space-y-1">
-                                {user.devices.map((d) => (
-                                  <div
-                                    key={d.id}
-                                    className="text-xs bg-white rounded border border-gray-200 px-3 py-2"
-                                  >
-                                    <span className="font-medium">{d.label}</span>
-                                    <span className="text-gray-400 mr-2">
-                                      • آخر نشاط: {new Date(d.lastSeen).toLocaleDateString("ar-EG")}
+                        {expandedUser === user.id && (
+                          <div style={{ borderTop: "1px solid #f0f4f8", padding: 16, background: "#fafbfc" }}>
+                            {/* Devices */}
+                            <div style={{ marginBottom: 12 }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7A8D", marginBottom: 8 }}>
+                                الأجهزة المسجلة ({user.devices.length}/3)
+                              </div>
+                              {user.devices.length === 0 ? (
+                                <p style={{ fontSize: 11, color: "#9e9e9e" }}>لا أجهزة مسجلة</p>
+                              ) : (
+                                user.devices.map((d) => (
+                                  <div key={d.id} style={{
+                                    fontSize: 11, background: "#fff", borderRadius: 8,
+                                    padding: "6px 10px", marginBottom: 4,
+                                    border: "1px solid #e8edf3",
+                                  }}>
+                                    <span style={{ fontWeight: 600 }}>{d.label}</span>
+                                    <span style={{ color: "#9e9e9e", marginRight: 8 }}>
+                                      • {new Date(d.lastSeen).toLocaleDateString("ar-EG")}
                                     </span>
                                   </div>
-                                ))}
-                              </div>
-                            )}
+                                ))
+                              )}
+                            </div>
+
+                            {/* Actions */}
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                              <ActionBtn
+                                label={user.isActive ? "⏸ إيقاف" : "▶ تفعيل"}
+                                color={user.isActive ? "#e53935" : "#27ae60"}
+                                onClick={() => handleAction(user.id, "toggleActive", !user.isActive)}
+                              />
+                              <ActionBtn label="📱 مسح الأجهزة" color="#fb8c00"
+                                onClick={() => handleAction(user.id, "resetDevices")} />
+                              <ActionBtn label="⏰ تجديد" color="#0E7C86"
+                                onClick={() => {
+                                  const date = prompt("تاريخ الانتهاء (YYYY-MM-DD):");
+                                  if (date) handleAction(user.id, "updateExpiry", date);
+                                }} />
+                              <ActionBtn label="🔑 كلمة مرور" color="#8e24aa"
+                                onClick={() => {
+                                  const pw = prompt("كلمة المرور الجديدة:");
+                                  if (pw) handleAction(user.id, "resetPassword", pw);
+                                }} />
+                              <ActionBtn label="🗑 حذف" color="#e53935"
+                                onClick={() => handleDelete(user.id, user.email)} />
+                            </div>
                           </div>
-
-                          {/* Actions */}
-                          <div className="flex flex-wrap gap-2">
-                            <button
-                              onClick={() => handleAction(user.id, "toggleActive", !user.isActive)}
-                              className={`text-xs px-3 py-1.5 rounded-lg ${
-                                user.isActive
-                                  ? "bg-red-50 text-red-700 hover:bg-red-100"
-                                  : "bg-green-50 text-green-700 hover:bg-green-100"
-                              }`}
-                            >
-                              {user.isActive ? "⏸ إيقاف" : "▶ تفعيل"}
-                            </button>
-
-                            <button
-                              onClick={() => handleAction(user.id, "resetDevices")}
-                              className="text-xs px-3 py-1.5 rounded-lg bg-orange-50 text-orange-700 hover:bg-orange-100"
-                            >
-                              📱 مسح الأجهزة
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                const date = prompt("تاريخ انتهاء الاشتراك (YYYY-MM-DD):", "");
-                                if (date) handleAction(user.id, "updateExpiry", date);
-                              }}
-                              className="text-xs px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100"
-                            >
-                              ⏰ تجديد
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                const pw = prompt("كلمة المرور الجديدة:");
-                                if (pw) handleAction(user.id, "resetPassword", pw);
-                              }}
-                              className="text-xs px-3 py-1.5 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100"
-                            >
-                              🔑 كلمة مرور
-                            </button>
-
-                            <button
-                              onClick={() => handleDelete(user.id, user.email)}
-                              className="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-700 hover:bg-red-100"
-                            >
-                              🗑 حذف
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))
+                        )}
+                      </div>
+                    );
+                  })
                 )}
               </div>
             )}
 
             {/* Add User Tab */}
             {activeTab === "add" && (
-              <div className="max-w-md">
-                <div className="bg-white rounded-xl border border-gray-200 p-6">
-                  <h2 className="font-bold text-gray-800 mb-5">إضافة مستخدم جديد</h2>
-                  <form onSubmit={handleAddUser} className="space-y-4">
-                    <Field
-                      label="الاسم"
-                      value={newUser.name}
-                      onChange={(v) => setNewUser({ ...newUser, name: v })}
-                      placeholder="د. أحمد محمد"
-                    />
-                    <Field
-                      label="البريد الإلكتروني"
-                      type="email"
-                      value={newUser.email}
-                      onChange={(v) => setNewUser({ ...newUser, email: v })}
-                      placeholder="doctor@email.com"
-                    />
-                    <Field
-                      label="كلمة المرور"
-                      type="password"
-                      value={newUser.password}
-                      onChange={(v) => setNewUser({ ...newUser, password: v })}
-                      placeholder="••••••••"
-                    />
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+              <div style={{ maxWidth: 460 }}>
+                <div style={{ background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: "#0B1E3D", marginBottom: 20 }}>
+                    ➕ إضافة مستخدم جديد
+                  </div>
+                  <form onSubmit={handleAddUser}>
+                    <Field label="الاسم" value={newUser.name}
+                      onChange={(v) => setNewUser({ ...newUser, name: v })} placeholder="د. أحمد محمد" />
+                    <Field label="البريد الإلكتروني" type="email" value={newUser.email}
+                      onChange={(v) => setNewUser({ ...newUser, email: v })} placeholder="doctor@email.com" />
+                    <Field label="كلمة المرور" type="password" value={newUser.password}
+                      onChange={(v) => setNewUser({ ...newUser, password: v })} placeholder="••••••••" />
+                    <div style={{ marginBottom: 16 }}>
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
                         تاريخ انتهاء الاشتراك (اختياري)
                       </label>
                       <input
                         type="date"
                         value={newUser.expiresAt}
                         onChange={(e) => setNewUser({ ...newUser, expiresAt: e.target.value })}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]"
+                        style={{
+                          width: "100%", padding: "10px 12px",
+                          border: "1px solid #e5e7eb", borderRadius: 10,
+                          fontSize: 13, outline: "none", boxSizing: "border-box",
+                        }}
                       />
                     </div>
                     <button
                       type="submit"
-                      className="w-full bg-[#1e3a5f] text-white py-2.5 rounded-lg font-semibold hover:bg-[#2d5a9e]"
+                      style={{
+                        width: "100%", padding: "12px",
+                        background: "linear-gradient(135deg, #0B1E3D, #0E7C86)",
+                        color: "#fff", border: "none", borderRadius: 10,
+                        fontSize: 14, fontWeight: 700, cursor: "pointer",
+                      }}
                     >
                       إضافة المستخدم
                     </button>
@@ -356,58 +349,53 @@ export default function AdminPage() {
   );
 }
 
-function StatCard({
-  label,
-  value,
-  color,
-  icon,
-}: {
-  label: string;
-  value: number;
-  color: string;
-  icon: string;
-}) {
-  const colors = {
-    blue: "bg-blue-50 text-blue-700 border-blue-200",
-    green: "bg-green-50 text-green-700 border-green-200",
-    red: "bg-red-50 text-red-700 border-red-200",
-  } as Record<string, string>;
-
+function StatCard({ label, value, color, icon }: { label: string; value: number; color: string; icon: string }) {
   return (
-    <div className={`rounded-xl border p-5 ${colors[color]}`}>
-      <div className="text-2xl font-bold">{value}</div>
-      <div className="text-sm mt-1 flex items-center gap-1">
-        <span>{icon}</span>
-        <span>{label}</span>
-      </div>
+    <div style={{
+      background: "#fff", borderRadius: 14, padding: 20,
+      boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
+      borderTop: `4px solid ${color}`,
+    }}>
+      <div style={{ fontSize: 28, fontWeight: 900, color }}>{value}</div>
+      <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 4 }}>{icon} {label}</div>
     </div>
   );
 }
 
-function Field({
-  label,
-  value,
-  onChange,
-  placeholder,
-  type = "text",
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-  type?: string;
+function ActionBtn({ label, color, onClick }: { label: string; color: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        fontSize: 11, padding: "6px 12px", borderRadius: 8,
+        border: `1px solid ${color}30`,
+        background: `${color}12`, color,
+        cursor: "pointer", fontWeight: 600,
+      }}
+    >
+      {label}
+    </button>
+  );
+}
+
+function Field({ label, value, onChange, placeholder, type = "text" }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
 }) {
   return (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    <div style={{ marginBottom: 16 }}>
+      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
+        {label}
+      </label>
       <input
-        type={type}
-        value={value}
+        type={type} value={value} required
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        required
-        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0ea5e9]"
         dir={type === "email" || type === "password" ? "ltr" : "rtl"}
+        style={{
+          width: "100%", padding: "10px 12px",
+          border: "1px solid #e5e7eb", borderRadius: 10,
+          fontSize: 13, outline: "none", boxSizing: "border-box",
+        }}
       />
     </div>
   );
