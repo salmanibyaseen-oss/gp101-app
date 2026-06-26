@@ -136,7 +136,7 @@ export default function DashboardPage() {
               fontSize: 12, cursor: "pointer",
             }}
           >
-            لوحة التحكم
+            خروج
           </button>
         </div>
 
