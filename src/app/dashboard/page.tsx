@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 // ===== نفس أيقونات الـ Sidebar =====
 const SECTION_ICONS: Record<string, string> = {
-  "Medicine الباطنه": "🫀",
+  "Medicine الباطنه": "🩺",
   "Surgery الجراحه": "🔪",
   "Pediatric الاطفال": "👶",
   "BGYN النساء": "🤰",
