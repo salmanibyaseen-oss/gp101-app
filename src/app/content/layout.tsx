@@ -45,17 +45,6 @@ export default function ContentLayout({ children }: { children: React.ReactNode 
                 لوحة التحكم
               </a>
             )}
-            <form method="POST" action="/api/auth/logout">
-              <button
-                style={{
-                  background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.8)",
-                  borderRadius: 8, padding: "5px 12px", fontSize: 12,
-                  border: "1px solid rgba(255,255,255,0.2)", cursor: "pointer",
-                }}
-              >
-                خروج
-              </button>
-            </form>
           </div>
         </header>
 
