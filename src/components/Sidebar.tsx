@@ -89,7 +89,7 @@ export function Sidebar({ sections, isAdmin }: SidebarProps) {
   const sidebarContent = (
     <div
       className="flex flex-col h-full text-white"
-      style={{ background: "linear-gradient(180deg, #0B1E3D 0%, #0a3d4a 60%, #0E7C86 100%)" }}
+      style={{ background: "linear-gradient(180deg, #0E7C86 0%, #0a3d4a 40%, #0B1E3D 100%)" }}
     >
       {/* Logo */}
       <div style={{ padding: "18px 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
