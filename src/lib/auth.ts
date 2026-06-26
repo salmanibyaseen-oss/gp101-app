@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
-const MAX_DEVICES = parseInt(process.env.NEXT_PUBLIC_MAX_DEVICES || "3");
+const MAX_DEVICES = parseInt(process.env.NEXT_PUBLIC_MAX_DEVICES || "2");
 
 export interface TokenPayload {
   userId: string;
