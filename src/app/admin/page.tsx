@@ -3,27 +3,23 @@
 import { useState, useEffect } from "react";
 
 interface User {
-  id: string;
-  email: string;
-  name: string;
-  isActive: boolean;
-  expiresAt: string | null;
-  createdAt: string;
-  lastLogin: string | null;
+  id: string; email: string; name: string; isActive: boolean;
+  expiresAt: string | null; createdAt: string; lastLogin: string | null;
   devices: { id: string; label: string; userAgent: string; lastSeen: string }[];
 }
-
 interface Stats {
-  totalUsers: number;
-  activeUsers: number;
-  expiredUsers: number;
+  totalUsers: number; activeUsers: number; expiredUsers: number;
   recentLogins: { name: string; email: string; lastLogin: string }[];
+}
+interface Request {
+  id: string; name: string; email: string; status: string; createdAt: string;
 }
 
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
-  const [activeTab, setActiveTab] = useState<"stats" | "users" | "add">("stats");
+  const [requests, setRequests] = useState<Request[]>([]);
+  const [activeTab, setActiveTab] = useState<"stats" | "users" | "requests" | "add">("stats");
   const [loading, setLoading] = useState(true);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   const [newUser, setNewUser] = useState({ email: "", name: "", password: "", expiresAt: "" });
@@ -32,37 +28,34 @@ export default function AdminPage() {
 
   const fetchData = async () => {
     setLoading(true);
-    const [usersRes, statsRes] = await Promise.all([
+    const [usersRes, statsRes, reqRes] = await Promise.all([
       fetch("/api/admin/users").then((r) => r.json()),
       fetch("/api/admin/stats").then((r) => r.json()),
+      fetch("/api/admin/requests").then((r) => r.json()),
     ]);
     setUsers(usersRes.users || []);
     setStats(statsRes);
+    setRequests(reqRes.requests || []);
     setLoading(false);
   };
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await fetch("/api/admin/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newUser),
     });
     const data = await res.json();
     if (res.ok) {
       alert("✅ تم إضافة المستخدم");
       setNewUser({ email: "", name: "", password: "", expiresAt: "" });
-      fetchData();
-      setActiveTab("users");
-    } else {
-      alert("❌ " + data.error);
-    }
+      fetchData(); setActiveTab("users");
+    } else { alert("❌ " + data.error); }
   };
 
   const handleAction = async (userId: string, action: string, value?: any) => {
     const res = await fetch("/api/admin/users", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, action, value }),
     });
     if (res.ok) fetchData();
@@ -74,9 +67,20 @@ export default function AdminPage() {
     fetchData();
   };
 
+  const handleRequest = async (requestId: string, action: "approve" | "reject", expiresAt?: string) => {
+    const res = await fetch("/api/admin/requests", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ requestId, action, expiresAt }),
+    });
+    if (res.ok) fetchData();
+  };
+
+  const pendingCount = requests.filter((r) => r.status === "pending").length;
+
   const tabs = [
     { key: "stats", label: "إحصائيات", icon: "📊" },
     { key: "users", label: `المستخدمون (${users.length})`, icon: "👥" },
+    { key: "requests", label: `طلبات التسجيل${pendingCount > 0 ? ` (${pendingCount})` : ""}`, icon: "📋" },
     { key: "add", label: "إضافة مستخدم", icon: "➕" },
   ];
 
@@ -87,12 +91,7 @@ export default function AdminPage() {
       <header style={{ background: "linear-gradient(135deg, #0B1E3D 0%, #0a3d4a 60%, #0E7C86 100%)", padding: "16px 24px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: 10,
-              background: "rgba(255,255,255,0.15)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontWeight: 900, fontSize: 14, border: "1px solid rgba(255,255,255,0.2)",
-            }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 900, fontSize: 14, border: "1px solid rgba(255,255,255,0.2)" }}>
               <span style={{ color: "#F4A723" }}>GP</span>
             </div>
             <div>
@@ -101,28 +100,9 @@ export default function AdminPage() {
             </div>
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            <a href="/dashboard" style={{
-              fontSize: 12, color: "rgba(255,255,255,0.8)",
-              padding: "6px 14px", borderRadius: 8,
-              background: "rgba(255,255,255,0.1)",
-              border: "1px solid rgba(255,255,255,0.2)",
-              textDecoration: "none",
-            }}>
-              🏠 الموقع
-            </a>
-            <button
-              onClick={async () => {
-                await fetch("/api/auth/logout", { method: "POST" });
-                window.location.href = "/login";
-              }}
-              style={{
-                fontSize: 12, color: "rgba(255,255,255,0.7)",
-                padding: "6px 14px", borderRadius: 8,
-                background: "transparent",
-                border: "1px solid rgba(255,255,255,0.15)",
-                cursor: "pointer",
-              }}
-            >
+            <a href="/dashboard" style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", padding: "6px 14px", borderRadius: 8, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", textDecoration: "none" }}>🏠 الموقع</a>
+            <button onClick={async () => { await fetch("/api/auth/logout", { method: "POST" }); window.location.href = "/login"; }}
+              style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", padding: "6px 14px", borderRadius: 8, background: "transparent", border: "1px solid rgba(255,255,255,0.15)", cursor: "pointer" }}>
               خروج
             </button>
           </div>
@@ -131,18 +111,16 @@ export default function AdminPage() {
         {/* Tabs */}
         <div style={{ display: "flex", gap: 4, marginTop: 16 }}>
           {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key as any)}
-              style={{
-                padding: "8px 16px", borderRadius: "8px 8px 0 0",
-                fontSize: 12, fontWeight: 600, cursor: "pointer",
-                border: "none", transition: "all 0.15s",
+            <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
+              style={{ padding: "8px 14px", borderRadius: "8px 8px 0 0", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", transition: "all 0.15s", position: "relative",
                 background: activeTab === tab.key ? "#fff" : "rgba(255,255,255,0.1)",
-                color: activeTab === tab.key ? "#0B1E3D" : "rgba(255,255,255,0.7)",
-              }}
-            >
+                color: activeTab === tab.key ? "#0B1E3D" : "rgba(255,255,255,0.7)" }}>
               {tab.icon} {tab.label}
+              {tab.key === "requests" && pendingCount > 0 && (
+                <span style={{ position: "absolute", top: -6, left: -6, background: "#e53935", color: "#fff", borderRadius: "50%", width: 18, height: 18, fontSize: 10, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>
+                  {pendingCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -162,26 +140,16 @@ export default function AdminPage() {
                   <StatCard label="مشتركون نشطون" value={stats.activeUsers} color="#27ae60" icon="✅" />
                   <StatCard label="منتهي الاشتراك" value={stats.expiredUsers} color="#e53935" icon="⏰" />
                 </div>
-
                 <div style={{ background: "#fff", borderRadius: 16, padding: 20, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: "#0B1E3D", marginBottom: 16 }}>
-                    آخر عمليات الدخول
-                  </div>
-                  {stats.recentLogins.length === 0 ? (
-                    <p style={{ color: "#9e9e9e", fontSize: 13 }}>لا يوجد</p>
-                  ) : (
+                  <div style={{ fontWeight: 700, fontSize: 14, color: "#0B1E3D", marginBottom: 16 }}>آخر عمليات الدخول</div>
+                  {stats.recentLogins.length === 0 ? <p style={{ color: "#9e9e9e", fontSize: 13 }}>لا يوجد</p> : (
                     stats.recentLogins.map((u, i) => (
-                      <div key={i} style={{
-                        display: "flex", justifyContent: "space-between", alignItems: "center",
-                        padding: "10px 0", borderBottom: i < stats.recentLogins.length - 1 ? "1px solid #f0f4f8" : "none",
-                      }}>
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 0", borderBottom: i < stats.recentLogins.length - 1 ? "1px solid #f0f4f8" : "none" }}>
                         <div>
                           <div style={{ fontSize: 13, fontWeight: 600, color: "#1f2937" }}>{u.name}</div>
                           <div style={{ fontSize: 11, color: "#9e9e9e" }}>{u.email}</div>
                         </div>
-                        <div style={{ fontSize: 11, color: "#9e9e9e" }}>
-                          {new Date(u.lastLogin).toLocaleString("ar-EG")}
-                        </div>
+                        <div style={{ fontSize: 11, color: "#9e9e9e" }}>{new Date(u.lastLogin).toLocaleString("ar-EG")}</div>
                       </div>
                     ))
                   )}
@@ -192,102 +160,47 @@ export default function AdminPage() {
             {/* Users Tab */}
             {activeTab === "users" && (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {users.length === 0 ? (
-                  <div style={{ textAlign: "center", padding: 60, color: "#9e9e9e" }}>لا يوجد مستخدمون</div>
-                ) : (
+                {users.length === 0 ? <div style={{ textAlign: "center", padding: 60, color: "#9e9e9e" }}>لا يوجد مستخدمون</div> : (
                   users.map((user) => {
                     const isExpired = user.expiresAt && new Date(user.expiresAt) < new Date();
                     const isHealthy = user.isActive && !isExpired;
                     return (
-                      <div key={user.id} style={{
-                        background: "#fff", borderRadius: 14,
-                        boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
-                        overflow: "hidden",
-                        border: "1px solid #f0f4f8",
-                      }}>
-                        <div
-                          onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
-                          style={{
-                            display: "flex", alignItems: "center", gap: 12,
-                            padding: "14px 16px", cursor: "pointer",
-                          }}
-                        >
-                          {/* Avatar */}
-                          <div style={{
-                            width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                            background: isHealthy ? "#e8f5e9" : "#ffebee",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 16,
-                          }}>
+                      <div key={user.id} style={{ background: "#fff", borderRadius: 14, boxShadow: "0 2px 12px rgba(0,0,0,0.05)", overflow: "hidden", border: "1px solid #f0f4f8" }}>
+                        <div onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
+                          style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}>
+                          <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: isHealthy ? "#e8f5e9" : "#ffebee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
                             {isHealthy ? "👨‍⚕️" : "⚠️"}
                           </div>
-
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 700, fontSize: 13, color: "#0B1E3D" }}>{user.name}</div>
                             <div style={{ fontSize: 11, color: "#9e9e9e" }}>{user.email}</div>
                           </div>
-
                           <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11, color: "#6B7A8D" }}>
-                            <span>📱 {user.devices.length}/3</span>
-                            {user.expiresAt && (
-                              <span style={{ color: isExpired ? "#e53935" : "#27ae60" }}>
-                                ⏰ {new Date(user.expiresAt).toLocaleDateString("ar-EG")}
-                              </span>
-                            )}
-                            <div style={{
-                              width: 8, height: 8, borderRadius: "50%",
-                              background: isHealthy ? "#27ae60" : "#e53935",
-                            }} />
+                            <span>📱 {user.devices.length}/2</span>
+                            {user.expiresAt && <span style={{ color: isExpired ? "#e53935" : "#27ae60" }}>⏰ {new Date(user.expiresAt).toLocaleDateString("ar-EG")}</span>}
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: isHealthy ? "#27ae60" : "#e53935" }} />
                           </div>
                           <span style={{ color: "#9e9e9e", fontSize: 11 }}>{expandedUser === user.id ? "▲" : "▼"}</span>
                         </div>
-
                         {expandedUser === user.id && (
                           <div style={{ borderTop: "1px solid #f0f4f8", padding: 16, background: "#fafbfc" }}>
-                            {/* Devices */}
                             <div style={{ marginBottom: 12 }}>
-                              <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7A8D", marginBottom: 8 }}>
-                                الأجهزة المسجلة ({user.devices.length}/3)
-                              </div>
-                              {user.devices.length === 0 ? (
-                                <p style={{ fontSize: 11, color: "#9e9e9e" }}>لا أجهزة مسجلة</p>
-                              ) : (
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7A8D", marginBottom: 8 }}>الأجهزة المسجلة ({user.devices.length}/2)</div>
+                              {user.devices.length === 0 ? <p style={{ fontSize: 11, color: "#9e9e9e" }}>لا أجهزة مسجلة</p> : (
                                 user.devices.map((d) => (
-                                  <div key={d.id} style={{
-                                    fontSize: 11, background: "#fff", borderRadius: 8,
-                                    padding: "6px 10px", marginBottom: 4,
-                                    border: "1px solid #e8edf3",
-                                  }}>
+                                  <div key={d.id} style={{ fontSize: 11, background: "#fff", borderRadius: 8, padding: "6px 10px", marginBottom: 4, border: "1px solid #e8edf3" }}>
                                     <span style={{ fontWeight: 600 }}>{d.label}</span>
-                                    <span style={{ color: "#9e9e9e", marginRight: 8 }}>
-                                      • {new Date(d.lastSeen).toLocaleDateString("ar-EG")}
-                                    </span>
+                                    <span style={{ color: "#9e9e9e", marginRight: 8 }}>• {new Date(d.lastSeen).toLocaleDateString("ar-EG")}</span>
                                   </div>
                                 ))
                               )}
                             </div>
-
-                            {/* Actions */}
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                              <ActionBtn
-                                label={user.isActive ? "⏸ إيقاف" : "▶ تفعيل"}
-                                color={user.isActive ? "#e53935" : "#27ae60"}
-                                onClick={() => handleAction(user.id, "toggleActive", !user.isActive)}
-                              />
-                              <ActionBtn label="📱 مسح الأجهزة" color="#fb8c00"
-                                onClick={() => handleAction(user.id, "resetDevices")} />
-                              <ActionBtn label="⏰ تجديد" color="#0E7C86"
-                                onClick={() => {
-                                  const date = prompt("تاريخ الانتهاء (YYYY-MM-DD):");
-                                  if (date) handleAction(user.id, "updateExpiry", date);
-                                }} />
-                              <ActionBtn label="🔑 كلمة مرور" color="#8e24aa"
-                                onClick={() => {
-                                  const pw = prompt("كلمة المرور الجديدة:");
-                                  if (pw) handleAction(user.id, "resetPassword", pw);
-                                }} />
-                              <ActionBtn label="🗑 حذف" color="#e53935"
-                                onClick={() => handleDelete(user.id, user.email)} />
+                              <ActionBtn label={user.isActive ? "⏸ إيقاف" : "▶ تفعيل"} color={user.isActive ? "#e53935" : "#27ae60"} onClick={() => handleAction(user.id, "toggleActive", !user.isActive)} />
+                              <ActionBtn label="📱 مسح الأجهزة" color="#fb8c00" onClick={() => handleAction(user.id, "resetDevices")} />
+                              <ActionBtn label="⏰ تجديد" color="#0E7C86" onClick={() => { const d = prompt("تاريخ الانتهاء (YYYY-MM-DD):"); if (d) handleAction(user.id, "updateExpiry", d); }} />
+                              <ActionBtn label="🔑 كلمة مرور" color="#8e24aa" onClick={() => { const pw = prompt("كلمة المرور الجديدة:"); if (pw) handleAction(user.id, "resetPassword", pw); }} />
+                              <ActionBtn label="🗑 حذف" color="#e53935" onClick={() => handleDelete(user.id, user.email)} />
                             </div>
                           </div>
                         )}
@@ -298,44 +211,83 @@ export default function AdminPage() {
               </div>
             )}
 
+            {/* Requests Tab */}
+            {activeTab === "requests" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {requests.length === 0 ? (
+                  <div style={{ textAlign: "center", padding: 60, color: "#9e9e9e" }}>لا توجد طلبات تسجيل</div>
+                ) : (
+                  requests.map((req) => (
+                    <div key={req.id} style={{
+                      background: "#fff", borderRadius: 14, padding: "14px 16px",
+                      boxShadow: "0 2px 12px rgba(0,0,0,0.05)", border: "1px solid #f0f4f8",
+                      display: "flex", alignItems: "center", gap: 12,
+                    }}>
+                      {/* Status badge */}
+                      <div style={{
+                        width: 38, height: 38, borderRadius: 10, flexShrink: 0,
+                        background: req.status === "pending" ? "#fff8e1" : req.status === "approved" ? "#e8f5e9" : "#ffebee",
+                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
+                      }}>
+                        {req.status === "pending" ? "⏳" : req.status === "approved" ? "✅" : "❌"}
+                      </div>
+
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: 13, color: "#0B1E3D" }}>{req.name}</div>
+                        <div style={{ fontSize: 11, color: "#9e9e9e" }}>{req.email}</div>
+                        <div style={{ fontSize: 10, color: "#bbb", marginTop: 2 }}>
+                          {new Date(req.createdAt).toLocaleString("ar-EG")}
+                        </div>
+                      </div>
+
+                      {/* Status label */}
+                      <span style={{
+                        fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20,
+                        background: req.status === "pending" ? "#fff8e1" : req.status === "approved" ? "#e8f5e9" : "#ffebee",
+                        color: req.status === "pending" ? "#f59e0b" : req.status === "approved" ? "#27ae60" : "#e53935",
+                      }}>
+                        {req.status === "pending" ? "معلق" : req.status === "approved" ? "مقبول" : "مرفوض"}
+                      </span>
+
+                      {/* Actions — pending only */}
+                      {req.status === "pending" && (
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            onClick={() => {
+                              const d = prompt("تاريخ انتهاء الاشتراك (YYYY-MM-DD) — اتركه فارغاً بدون انتهاء:");
+                              handleRequest(req.id, "approve", d || undefined);
+                            }}
+                            style={{ fontSize: 12, padding: "6px 14px", borderRadius: 8, border: "none", background: "#27ae60", color: "#fff", cursor: "pointer", fontWeight: 700 }}>
+                            ✅ قبول
+                          </button>
+                          <button
+                            onClick={() => handleRequest(req.id, "reject")}
+                            style={{ fontSize: 12, padding: "6px 14px", borderRadius: 8, border: "none", background: "#e53935", color: "#fff", cursor: "pointer", fontWeight: 700 }}>
+                            ❌ رفض
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
             {/* Add User Tab */}
             {activeTab === "add" && (
               <div style={{ maxWidth: 460 }}>
                 <div style={{ background: "#fff", borderRadius: 16, padding: 24, boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-                  <div style={{ fontWeight: 800, fontSize: 16, color: "#0B1E3D", marginBottom: 20 }}>
-                    ➕ إضافة مستخدم جديد
-                  </div>
+                  <div style={{ fontWeight: 800, fontSize: 16, color: "#0B1E3D", marginBottom: 20 }}>➕ إضافة مستخدم جديد</div>
                   <form onSubmit={handleAddUser}>
-                    <Field label="الاسم" value={newUser.name}
-                      onChange={(v) => setNewUser({ ...newUser, name: v })} placeholder="د. أحمد محمد" />
-                    <Field label="البريد الإلكتروني" type="email" value={newUser.email}
-                      onChange={(v) => setNewUser({ ...newUser, email: v })} placeholder="doctor@email.com" />
-                    <Field label="كلمة المرور" type="password" value={newUser.password}
-                      onChange={(v) => setNewUser({ ...newUser, password: v })} placeholder="••••••••" />
+                    <Field label="الاسم" value={newUser.name} onChange={(v) => setNewUser({ ...newUser, name: v })} placeholder="د. أحمد محمد" />
+                    <Field label="البريد الإلكتروني" type="email" value={newUser.email} onChange={(v) => setNewUser({ ...newUser, email: v })} placeholder="doctor@email.com" />
+                    <Field label="كلمة المرور" type="password" value={newUser.password} onChange={(v) => setNewUser({ ...newUser, password: v })} placeholder="••••••••" />
                     <div style={{ marginBottom: 16 }}>
-                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
-                        تاريخ انتهاء الاشتراك (اختياري)
-                      </label>
-                      <input
-                        type="date"
-                        value={newUser.expiresAt}
-                        onChange={(e) => setNewUser({ ...newUser, expiresAt: e.target.value })}
-                        style={{
-                          width: "100%", padding: "10px 12px",
-                          border: "1px solid #e5e7eb", borderRadius: 10,
-                          fontSize: 13, outline: "none", boxSizing: "border-box",
-                        }}
-                      />
+                      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>تاريخ انتهاء الاشتراك (اختياري)</label>
+                      <input type="date" value={newUser.expiresAt} onChange={(e) => setNewUser({ ...newUser, expiresAt: e.target.value })}
+                        style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 10, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
                     </div>
-                    <button
-                      type="submit"
-                      style={{
-                        width: "100%", padding: "12px",
-                        background: "linear-gradient(135deg, #0B1E3D, #0E7C86)",
-                        color: "#fff", border: "none", borderRadius: 10,
-                        fontSize: 14, fontWeight: 700, cursor: "pointer",
-                      }}
-                    >
+                    <button type="submit" style={{ width: "100%", padding: "12px", background: "linear-gradient(135deg, #0B1E3D, #0E7C86)", color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                       إضافة المستخدم
                     </button>
                   </form>
@@ -351,11 +303,7 @@ export default function AdminPage() {
 
 function StatCard({ label, value, color, icon }: { label: string; value: number; color: string; icon: string }) {
   return (
-    <div style={{
-      background: "#fff", borderRadius: 14, padding: 20,
-      boxShadow: "0 2px 12px rgba(0,0,0,0.06)",
-      borderTop: `4px solid ${color}`,
-    }}>
+    <div style={{ background: "#fff", borderRadius: 14, padding: 20, boxShadow: "0 2px 12px rgba(0,0,0,0.06)", borderTop: `4px solid ${color}` }}>
       <div style={{ fontSize: 28, fontWeight: 900, color }}>{value}</div>
       <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 4 }}>{icon} {label}</div>
     </div>
@@ -364,39 +312,19 @@ function StatCard({ label, value, color, icon }: { label: string; value: number;
 
 function ActionBtn({ label, color, onClick }: { label: string; color: string; onClick: () => void }) {
   return (
-    <button
-      onClick={onClick}
-      style={{
-        fontSize: 11, padding: "6px 12px", borderRadius: 8,
-        border: `1px solid ${color}30`,
-        background: `${color}12`, color,
-        cursor: "pointer", fontWeight: 600,
-      }}
-    >
+    <button onClick={onClick} style={{ fontSize: 11, padding: "6px 12px", borderRadius: 8, border: `1px solid ${color}30`, background: `${color}12`, color, cursor: "pointer", fontWeight: 600 }}>
       {label}
     </button>
   );
 }
 
-function Field({ label, value, onChange, placeholder, type = "text" }: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
-}) {
+function Field({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
   return (
     <div style={{ marginBottom: 16 }}>
-      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>
-        {label}
-      </label>
-      <input
-        type={type} value={value} required
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
+      <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>{label}</label>
+      <input type={type} value={value} required onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
         dir={type === "email" || type === "password" ? "ltr" : "rtl"}
-        style={{
-          width: "100%", padding: "10px 12px",
-          border: "1px solid #e5e7eb", borderRadius: 10,
-          fontSize: 13, outline: "none", boxSizing: "border-box",
-        }}
-      />
+        style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 10, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
     </div>
   );
 }
