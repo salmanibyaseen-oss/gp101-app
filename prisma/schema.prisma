@@ -5,8 +5,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -56,6 +57,6 @@ model RegistrationRequest {
   name      String
   email     String   @unique
   password  String
-  status    String   @default("pending") // pending | approved | rejected
+  status    String   @default("pending")
   createdAt DateTime @default(now())
 }
