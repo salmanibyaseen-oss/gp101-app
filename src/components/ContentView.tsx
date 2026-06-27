@@ -150,18 +150,8 @@ function parseIntoSections(content: string) {
 
 // ── Normalize Notion 4-space indent → 2-space so ReactMarkdown nests correctly
 function normalizeIndent(md: string): string {
-  return md
-    .split("\n")
-    .map((line) => {
-      // Count leading spaces
-      const match = line.match(/^( +)/);
-      if (!match) return line;
-      const spaces = match[1].length;
-      // Convert every 4 spaces → 2 spaces
-      const normalized = Math.floor(spaces / 4) * 2 + (spaces % 4);
-      return " ".repeat(normalized) + line.trimStart();
-    })
-    .join("\n");
+  // Content already uses 2-space indent — no conversion needed
+  return md;
 }
 
 // ── Mini Markdown renderer (for non-heading content) ─────────────────────
