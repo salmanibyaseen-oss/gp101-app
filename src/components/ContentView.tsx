@@ -148,8 +148,25 @@ function parseIntoSections(content: string) {
   return result;
 }
 
+// ── Normalize Notion 4-space indent → 2-space so ReactMarkdown nests correctly
+function normalizeIndent(md: string): string {
+  return md
+    .split("\n")
+    .map((line) => {
+      // Count leading spaces
+      const match = line.match(/^( +)/);
+      if (!match) return line;
+      const spaces = match[1].length;
+      // Convert every 4 spaces → 2 spaces
+      const normalized = Math.floor(spaces / 4) * 2 + (spaces % 4);
+      return " ".repeat(normalized) + line.trimStart();
+    })
+    .join("\n");
+}
+
 // ── Mini Markdown renderer (for non-heading content) ─────────────────────
 function MiniMarkdown({ content, color }: { content: string; color: string }) {
+  const normalized = normalizeIndent(content);
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -267,7 +284,7 @@ function MiniMarkdown({ content, color }: { content: string; color: string }) {
         },
       }}
     >
-      {content}
+      {normalized}
     </ReactMarkdown>
   );
 }
