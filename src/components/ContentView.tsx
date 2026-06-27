@@ -398,7 +398,7 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
           )}
 
           {/* Content */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6" dir="rtl">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6" dir="ltr">
             {renderSections()}
           </div>
 
