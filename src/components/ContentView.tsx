@@ -317,7 +317,7 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
 
       if (sec.type === "h1") {
         output.push(
-          <h1 key={i} style={{
+          <h1 key={"h1-" + i} style={{
             color: sectionColor, fontSize: 22, fontWeight: 900,
             borderBottom: `3px solid ${sectionColor}`,
             paddingBottom: 10, marginBottom: 16, letterSpacing: 0.3,
@@ -325,6 +325,12 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
             {sec.text}
           </h1>
         );
+        const h1Body = sec.children.join("\n");
+        if (h1Body.trim()) {
+          output.push(
+            <MiniMarkdown key={"h1-body-" + i} content={h1Body} color={sectionColor} />
+          );
+        }
         i++;
         continue;
       }
