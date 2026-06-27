@@ -33,7 +33,6 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
       .then((d) => setHasNote(!!d.note?.content))
       .catch(() => {});
   }, [topic.slug]);
-
   return (
     <div className="flex h-full">
       <div className="flex-1 overflow-auto">
