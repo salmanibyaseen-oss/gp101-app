@@ -4,29 +4,37 @@ import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+ process.env.SUPABASE_URL!,
+ process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const user = getCurrentUser();
-  if (!user) return NextResponse.json({ error: "غير مسجل دخول" }, { status: 401 });
+ const user = getCurrentUser();
+ if (!user) return NextResponse.json({ error: "غير مسجل دخول" }, { status: 401 });
 
-  const hasAccess = user.hasBooksAccess || user.isAdmin;
-  if (!hasAccess) return NextResponse.json({ error: "هذا الكتاب يتطلب اشتراك" }, { status: 403 });
+ const hasAccess = user.hasBooksAccess || user.isAdmin;
+ if (!hasAccess) return NextResponse.json({ error: "هذا الكتاب يتطلب اشتراك" }, { status: 403 });
 
-  const book = await prisma.book.findUnique({ where: { id: params.id } });
-  if (!book || !book.isActive) return NextResponse.json({ error: "الكتاب غير موجود" }, { status: 404 });
+ const book = await prisma.book.findUnique({ where: { id: params.id } });
+ if (!book || !book.isActive) return NextResponse.json({ error: "الكتاب غير موجود" }, { status: 404 });
 
-  const { data, error } = await supabase.storage
-    .from("Books")
-    .createSignedUrl(book.fileUrl, 120); // صالح لدقيقتين فقط
+ // استخرج الـ path من الـ URL لو كان full URL
+ const filePath = book.fileUrl.includes("/storage/v1/object")
+   ? book.fileUrl.split("/Books/")[1]
+   : book.fileUrl;
 
-  if (error || !data) return NextResponse.json({ error: "فشل توليد رابط الملف" }, { status: 500 });
+ const { data, error } = await supabase.storage
+   .from("Books")
+   .createSignedUrl(decodeURIComponent(filePath), 120);
 
-  return NextResponse.json({
-    url: data.signedUrl,
-    title: book.title,
-    watermark: `${user.email} — ${new Date().toLocaleDateString("ar-EG")}`,
-  });
+ if (error || !data) {
+   console.error("Supabase error:", error);
+   return NextResponse.json({ error: "فشل توليد رابط الملف", details: error?.message }, { status: 500 });
+ }
+
+ return NextResponse.json({
+   url: data.signedUrl,
+   title: book.title,
+   watermark: `${user.email} — ${new Date().toLocaleDateString("ar-EG")}`,
+ });
 }
