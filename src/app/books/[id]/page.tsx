@@ -12,7 +12,6 @@ export default function BookViewerPage() {
   const [title, setTitle] = useState("");
   const [progress, setProgress] = useState(0);
 
-  // منع كليك يمين والكيبورد
   useEffect(() => {
     const blockContext = (e: MouseEvent) => e.preventDefault();
     const blockKeys = (e: KeyboardEvent) => {
@@ -32,7 +31,7 @@ export default function BookViewerPage() {
 
     async function load() {
       try {
-        // جيب معلومات الكتاب أولاً
+        // جيب معلومات الكتاب
         const infoRes = await fetch(`/api/books/${id}/view?mode=info`);
         const info = await infoRes.json();
         if (!infoRes.ok) {
@@ -40,6 +39,7 @@ export default function BookViewerPage() {
           setLoading(false);
           return;
         }
+        if (cancelled) return;
         setWatermark(info.watermark);
         setTitle(info.title);
 
@@ -54,10 +54,10 @@ export default function BookViewerPage() {
         const buf = await pdfRes.arrayBuffer();
         if (cancelled) return;
 
-        // رسم الـ PDF بـ PDF.js
-        const pdfjsLib = await import("pdfjs-dist");
+        // PDF.js
+        const pdfjsLib = (await import("pdfjs-dist/legacy/build/pdf")) as any;
         pdfjsLib.GlobalWorkerOptions.workerSrc =
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs";
+          "https://unpkg.com/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs";
 
         const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
         const total = pdf.numPages;
@@ -72,20 +72,22 @@ export default function BookViewerPage() {
           const canvas = document.createElement("canvas");
           canvas.width = viewport.width;
           canvas.height = viewport.height;
-          canvas.style.cssText = "display:block;margin:0 auto 12px;max-width:100%;box-shadow:0 2px 12px rgba(0,0,0,0.1);border-radius:4px;";
+          canvas.style.cssText =
+            "display:block;margin:0 auto 12px;max-width:100%;box-shadow:0 2px 12px rgba(0,0,0,0.2);border-radius:4px;";
           const ctx = canvas.getContext("2d")!;
+
           await page.render({ canvasContext: ctx, viewport }).promise;
 
-          // أضف الـ watermark على كل صفحة
+          // watermark على كل صفحة
           ctx.save();
-          ctx.globalAlpha = 0.08;
-          ctx.font = "bold 28px Arial";
+          ctx.globalAlpha = 0.07;
+          ctx.font = "bold 24px Arial";
           ctx.fillStyle = "#0B1E3D";
           ctx.translate(canvas.width / 2, canvas.height / 2);
           ctx.rotate(-Math.PI / 6);
           ctx.textAlign = "center";
           for (let r = -canvas.height; r < canvas.height; r += 120) {
-            for (let c = -canvas.width; c < canvas.width; c += 300) {
+            for (let c = -canvas.width; c < canvas.width; c += 320) {
               ctx.fillText(info.watermark, c, r);
             }
           }
@@ -96,7 +98,8 @@ export default function BookViewerPage() {
         }
 
         setLoading(false);
-      } catch (e) {
+      } catch (e: any) {
+        console.error(e);
         if (!cancelled) {
           setError("فشل تحميل الكتاب");
           setLoading(false);
@@ -115,7 +118,12 @@ export default function BookViewerPage() {
       onDragStart={(e) => e.preventDefault()}
     >
       {/* Header */}
-      <div style={{ background: "linear-gradient(135deg, #0B1E3D 0%, #0E7C86 100%)", padding: "12px 16px", color: "#fff", display: "flex", alignItems: "center", gap: 12, position: "sticky", top: 0, zIndex: 100 }}>
+      <div style={{
+        background: "linear-gradient(135deg, #0B1E3D 0%, #0E7C86 100%)",
+        padding: "12px 16px", color: "#fff",
+        display: "flex", alignItems: "center", gap: 12,
+        position: "sticky", top: 0, zIndex: 100,
+      }}>
         <button
           onClick={() => router.push("/books")}
           style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer" }}
