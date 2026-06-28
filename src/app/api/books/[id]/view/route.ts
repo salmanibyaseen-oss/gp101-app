@@ -22,8 +22,10 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     .from("Books")
     .createSignedUrl(book.fileUrl, 120); // صالح لدقيقتين فقط
 
-  if (error || !data) return NextResponse.json({ error: "فشل توليد رابط الملف" }, { status: 500 });
-
+  if (error || !data) {
+  console.error("Supabase signed URL error:", error);
+  return NextResponse.json({ error: error?.message || "فشل توليد رابط الملف", debug: book.fileUrl }, { status: 500 });
+}
   return NextResponse.json({
     url: data.signedUrl,
     title: book.title,
