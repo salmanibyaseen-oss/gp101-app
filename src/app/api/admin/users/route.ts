@@ -10,20 +10,15 @@ function requireAdmin() {
   return user;
 }
 
-// GET all users
 export async function GET() {
   if (!requireAdmin()) return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
 
   const users = await prisma.user.findMany({
     where: { isAdmin: false },
     select: {
-      id: true,
-      email: true,
-      name: true,
-      isActive: true,
-      expiresAt: true,
-      createdAt: true,
-      lastLogin: true,
+      id: true, email: true, name: true,
+      isActive: true, expiresAt: true, createdAt: true, lastLogin: true,
+      hasWebAccess: true, hasBooksAccess: true,
       devices: { select: { id: true, label: true, userAgent: true, lastSeen: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -32,14 +27,12 @@ export async function GET() {
   return NextResponse.json({ users });
 }
 
-// POST create user
 export async function POST(req: NextRequest) {
   if (!requireAdmin()) return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
 
-  const { email, name, password, expiresAt } = await req.json();
-  if (!email || !name || !password) {
+  const { email, name, password, expiresAt, hasWebAccess, hasBooksAccess } = await req.json();
+  if (!email || !name || !password)
     return NextResponse.json({ error: "بيانات ناقصة" }, { status: 400 });
-  }
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) return NextResponse.json({ error: "البريد الإلكتروني موجود بالفعل" }, { status: 400 });
@@ -47,17 +40,16 @@ export async function POST(req: NextRequest) {
   const hashed = await bcrypt.hash(password, 12);
   const user = await prisma.user.create({
     data: {
-      email,
-      name,
-      password: hashed,
+      email, name, password: hashed,
       expiresAt: expiresAt ? new Date(expiresAt) : null,
+      hasWebAccess: hasWebAccess ?? true,
+      hasBooksAccess: hasBooksAccess ?? false,
     },
   });
 
   return NextResponse.json({ success: true, userId: user.id });
 }
 
-// PATCH update user (toggle active, reset devices, update expiry)
 export async function PATCH(req: NextRequest) {
   if (!requireAdmin()) return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
 
@@ -68,19 +60,19 @@ export async function PATCH(req: NextRequest) {
   } else if (action === "resetDevices") {
     await prisma.device.deleteMany({ where: { userId } });
   } else if (action === "updateExpiry") {
-    await prisma.user.update({
-      where: { id: userId },
-      data: { expiresAt: value ? new Date(value) : null },
-    });
+    await prisma.user.update({ where: { id: userId }, data: { expiresAt: value ? new Date(value) : null } });
   } else if (action === "resetPassword") {
     const hashed = await bcrypt.hash(value, 12);
     await prisma.user.update({ where: { id: userId }, data: { password: hashed } });
+  } else if (action === "toggleWebAccess") {
+    await prisma.user.update({ where: { id: userId }, data: { hasWebAccess: value } });
+  } else if (action === "toggleBooksAccess") {
+    await prisma.user.update({ where: { id: userId }, data: { hasBooksAccess: value } });
   }
 
   return NextResponse.json({ success: true });
 }
 
-// DELETE user
 export async function DELETE(req: NextRequest) {
   if (!requireAdmin()) return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
 
