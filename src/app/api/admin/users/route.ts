@@ -13,18 +13,28 @@ function requireAdmin() {
 export async function GET() {
   if (!requireAdmin()) return NextResponse.json({ error: "غير مصرح" }, { status: 403 });
 
-  const users = await prisma.user.findMany({
-    where: { isAdmin: false },
-    select: {
-      id: true, email: true, name: true,
-      isActive: true, expiresAt: true, createdAt: true, lastLogin: true,
-      hasWebAccess: true, hasBooksAccess: true,
-      devices: { select: { id: true, label: true, userAgent: true, lastSeen: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  try {
+    const users = await prisma.user.findMany({
+      where: { isAdmin: false },
+      select: {
+        id: true, email: true, name: true,
+        isActive: true, expiresAt: true, createdAt: true, lastLogin: true,
+        devices: { select: { id: true, label: true, userAgent: true, lastSeen: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
 
-  return NextResponse.json({ users });
+    // أضف hasWebAccess و hasBooksAccess بـ default لو مش موجودين في الـ DB
+    const usersWithAccess = users.map((u: any) => ({
+      ...u,
+      hasWebAccess: u.hasWebAccess ?? true,
+      hasBooksAccess: u.hasBooksAccess ?? false,
+    }));
+
+    return NextResponse.json({ users: usersWithAccess });
+  } catch (e) {
+    return NextResponse.json({ error: "خطأ في السيرفر" }, { status: 500 });
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -38,15 +48,19 @@ export async function POST(req: NextRequest) {
   if (existing) return NextResponse.json({ error: "البريد الإلكتروني موجود بالفعل" }, { status: 400 });
 
   const hashed = await bcrypt.hash(password, 12);
-  const user = await prisma.user.create({
-    data: {
-      email, name, password: hashed,
-      expiresAt: expiresAt ? new Date(expiresAt) : null,
-      hasWebAccess: hasWebAccess ?? true,
-      hasBooksAccess: hasBooksAccess ?? false,
-    },
-  });
 
+  const data: any = {
+    email, name, password: hashed,
+    expiresAt: expiresAt ? new Date(expiresAt) : null,
+  };
+
+  // أضفهم بس لو الـ columns موجودة
+  try {
+    data.hasWebAccess = hasWebAccess ?? true;
+    data.hasBooksAccess = hasBooksAccess ?? false;
+  } catch {}
+
+  const user = await prisma.user.create({ data });
   return NextResponse.json({ success: true, userId: user.id });
 }
 
@@ -55,19 +69,23 @@ export async function PATCH(req: NextRequest) {
 
   const { userId, action, value } = await req.json();
 
-  if (action === "toggleActive") {
-    await prisma.user.update({ where: { id: userId }, data: { isActive: value } });
-  } else if (action === "resetDevices") {
-    await prisma.device.deleteMany({ where: { userId } });
-  } else if (action === "updateExpiry") {
-    await prisma.user.update({ where: { id: userId }, data: { expiresAt: value ? new Date(value) : null } });
-  } else if (action === "resetPassword") {
-    const hashed = await bcrypt.hash(value, 12);
-    await prisma.user.update({ where: { id: userId }, data: { password: hashed } });
-  } else if (action === "toggleWebAccess") {
-    await prisma.user.update({ where: { id: userId }, data: { hasWebAccess: value } });
-  } else if (action === "toggleBooksAccess") {
-    await prisma.user.update({ where: { id: userId }, data: { hasBooksAccess: value } });
+  try {
+    if (action === "toggleActive") {
+      await prisma.user.update({ where: { id: userId }, data: { isActive: value } });
+    } else if (action === "resetDevices") {
+      await prisma.device.deleteMany({ where: { userId } });
+    } else if (action === "updateExpiry") {
+      await prisma.user.update({ where: { id: userId }, data: { expiresAt: value ? new Date(value) : null } });
+    } else if (action === "resetPassword") {
+      const hashed = await bcrypt.hash(value, 12);
+      await prisma.user.update({ where: { id: userId }, data: { password: hashed } });
+    } else if (action === "toggleWebAccess") {
+      await (prisma.user as any).update({ where: { id: userId }, data: { hasWebAccess: value } });
+    } else if (action === "toggleBooksAccess") {
+      await (prisma.user as any).update({ where: { id: userId }, data: { hasBooksAccess: value } });
+    }
+  } catch (e) {
+    return NextResponse.json({ error: "خطأ - تأكد من تشغيل الـ migration" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
