@@ -1,20 +1,21 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 export default function BookViewerPage() {
   const { id } = useParams();
   const router = useRouter();
+  const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [pdfUrl, setPdfUrl] = useState("");
-  const [watermark, setWatermark] = useState("");
+  const [watermarkText, setWatermarkText] = useState("");
   const [title, setTitle] = useState("");
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     const blockContext = (e: MouseEvent) => e.preventDefault();
     const blockKeys = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && ["s", "p"].includes(e.key.toLowerCase())) e.preventDefault();
+      if ((e.ctrlKey || e.metaKey) && ["s", "p", "u"].includes(e.key.toLowerCase())) e.preventDefault();
       if (e.key === "F12") e.preventDefault();
     };
     document.addEventListener("contextmenu", blockContext);
@@ -26,19 +27,23 @@ export default function BookViewerPage() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       try {
-        const res = await fetch(`/api/books/${id}/view?mode=info`);
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.error || "غير مصرح بالوصول");
+        // جيب معلومات الكتاب
+        const infoRes = await fetch(`/api/books/${id}/view?mode=info`);
+        const info = await infoRes.json();
+        if (!infoRes.ok) {
+          setError(info.error || "غير مصرح بالوصول");
           setLoading(false);
           return;
         }
-        setWatermark(data.watermark);
-        setTitle(data.title);
+        if (cancelled) return;
+        setWatermarkText(info.watermark);
+        setTitle(info.title);
 
-        // جيب الـ PDF كـ blob عبر الـ proxy
+        // جيب الـ PDF عبر الـ proxy
         const pdfRes = await fetch(`/api/books/${id}/view?mode=pdf`);
         if (!pdfRes.ok) {
           setError("فشل تحميل الكتاب");
@@ -46,28 +51,72 @@ export default function BookViewerPage() {
           return;
         }
 
-        const blob = await pdfRes.blob();
-        // عمل blob URL مؤقت في الميموري
-        const url = URL.createObjectURL(blob);
-        setPdfUrl(url);
+        const buf = await pdfRes.arrayBuffer();
+        if (cancelled) return;
+
+        // PDF.js 4.0.379
+        const pdfjsLib = await import("pdfjs-dist");
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs";
+
+        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buf) });
+        const pdf = await loadingTask.promise;
+        const total = pdf.numPages;
+
+        if (cancelled || !containerRef.current) return;
+        containerRef.current.innerHTML = "";
+
+        for (let i = 1; i <= total; i++) {
+          if (cancelled) return;
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.5 });
+
+          const canvas = document.createElement("canvas");
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          canvas.style.cssText =
+            "display:block;margin:0 auto 12px;max-width:100%;box-shadow:0 2px 16px rgba(0,0,0,0.3);border-radius:4px;";
+
+          const ctx = canvas.getContext("2d")!;
+          await page.render({ canvasContext: ctx, viewport }).promise;
+
+          // watermark مرسوم على الـ canvas
+          ctx.save();
+          ctx.globalAlpha = 0.12;
+          ctx.font = "bold 22px Arial";
+          ctx.fillStyle = "#c0392b";
+          ctx.translate(canvas.width / 2, canvas.height / 2);
+          ctx.rotate(-Math.PI / 6);
+          ctx.textAlign = "center";
+          for (let row = -canvas.height; row < canvas.height; row += 110) {
+            for (let col = -canvas.width; col < canvas.width; col += 300) {
+              ctx.fillText(info.watermark, col, row);
+            }
+          }
+          ctx.restore();
+
+          if (containerRef.current) containerRef.current.appendChild(canvas);
+          setProgress(Math.round((i / total) * 100));
+        }
+
         setLoading(false);
-      } catch {
-        setError("فشل تحميل الكتاب");
-        setLoading(false);
+      } catch (e: any) {
+        console.error("PDF error:", e);
+        if (!cancelled) {
+          setError("فشل تحميل الكتاب");
+          setLoading(false);
+        }
       }
     }
-    load();
 
-    // cleanup blob URL
-    return () => {
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-    };
+    load();
+    return () => { cancelled = true; };
   }, [id]);
 
   return (
     <div
       dir="rtl"
-      style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#1a1a2e", fontFamily: "'Segoe UI', Arial, sans-serif", userSelect: "none" }}
+      style={{ minHeight: "100vh", background: "#1a1a2e", fontFamily: "'Segoe UI', Arial, sans-serif", userSelect: "none" }}
       onDragStart={(e) => e.preventDefault()}
     >
       {/* Header */}
@@ -75,7 +124,7 @@ export default function BookViewerPage() {
         background: "linear-gradient(135deg, #0B1E3D 0%, #0E7C86 100%)",
         padding: "12px 16px", color: "#fff",
         display: "flex", alignItems: "center", gap: 12,
-        flexShrink: 0,
+        position: "sticky", top: 0, zIndex: 100,
       }}>
         <button
           onClick={() => router.push("/books")}
@@ -84,18 +133,28 @@ export default function BookViewerPage() {
           → رجوع
         </button>
         <h1 style={{ fontSize: 15, fontWeight: 800, flex: 1 }}>{title || "الكتاب"}</h1>
-        {watermark && (
-          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            🔒 {watermark}
+        {loading && progress > 0 && (
+          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>{progress}%</span>
+        )}
+        {!loading && watermarkText && (
+          <span style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", maxWidth: 180, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            🔒 {watermarkText}
           </span>
         )}
       </div>
 
       {/* Content */}
-      <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
+      <div style={{ padding: "16px 8px", maxWidth: 900, margin: "0 auto" }}>
         {loading && (
-          <div style={{ textAlign: "center", color: "#fff", padding: 60, fontSize: 14 }}>
-            جاري تحميل الكتاب...
+          <div style={{ textAlign: "center", padding: 60 }}>
+            <div style={{ color: "#fff", fontSize: 14, marginBottom: 16 }}>
+              {progress > 0 ? `جاري تحميل الصفحات... ${progress}%` : "جاري تحميل الكتاب..."}
+            </div>
+            {progress > 0 && (
+              <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 8, height: 6, overflow: "hidden", maxWidth: 300, margin: "0 auto" }}>
+                <div style={{ background: "#0E7C86", height: "100%", width: `${progress}%`, transition: "width 0.3s" }} />
+              </div>
+            )}
           </div>
         )}
 
@@ -105,34 +164,7 @@ export default function BookViewerPage() {
           </div>
         )}
 
-        {pdfUrl && (
-          <div style={{ position: "relative", width: "100%", height: "100%" }}>
-            {/* PDF viewer */}
-            <iframe
-              src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1&view=FitH`}
-              style={{ width: "100%", height: "100%", border: "none" }}
-              title={title}
-              sandbox="allow-same-origin allow-scripts"
-            />
-
-            {/* Watermark overlay فوق الـ iframe */}
-            <div style={{
-              position: "absolute", inset: 0,
-              pointerEvents: "none",
-              display: "flex", flexWrap: "wrap",
-              alignContent: "center", justifyContent: "center",
-              gap: 60, opacity: 0.1,
-              transform: "rotate(-30deg)",
-              zIndex: 10,
-            }}>
-              {Array.from({ length: 50 }).map((_, i) => (
-                <span key={i} style={{ fontSize: 13, fontWeight: 700, color: "#fff", whiteSpace: "nowrap" }}>
-                  {watermark}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
+        <div ref={containerRef} />
       </div>
     </div>
   );
