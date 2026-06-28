@@ -6,14 +6,15 @@ interface Book {
   id: string;
   title: string;
   description: string | null;
-  fileUrl: string;
   coverUrl: string | null;
-  price: number;
+  price: number | null;
+  fileUrl?: string;
 }
 
 export default function BooksPage() {
   const router = useRouter();
   const [books, setBooks] = useState<Book[]>([]);
+  const [hasAccess, setHasAccess] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -23,6 +24,7 @@ export default function BooksPage() {
       .then((d) => {
         if (d.error) setError(d.error);
         setBooks(d.books || []);
+        setHasAccess(!!d.hasAccess);
       })
       .catch(() => setError("حدث خطأ في تحميل الكتب"))
       .finally(() => setLoading(false));
@@ -61,12 +63,16 @@ export default function BooksPage() {
               <div style={{ fontWeight: 700, color: "#0B1E3D", fontSize: 14 }}>{book.title}</div>
               {book.description && <div style={{ fontSize: 11, color: "#6B7A8D" }}>{book.description}</div>}
             </div>
-            <a href={book.fileUrl} target="_blank" rel="noopener noreferrer" style={{
-              background: "#0E7C86", color: "#fff", borderRadius: 10,
-              padding: "8px 14px", fontSize: 13, fontWeight: 700, textDecoration: "none",
-            }}>
-              فتح
-            </a>
+            {hasAccess && book.fileUrl ? (
+              <a href={book.fileUrl} target="_blank" rel="noopener noreferrer" style={{
+                background: "#0E7C86", color: "#fff", borderRadius: 10,
+                padding: "8px 14px", fontSize: 13, fontWeight: 700, textDecoration: "none",
+              }}>
+                فتح
+              </a>
+            ) : (
+              <span style={{ fontSize: 12, color: "#ccc" }}>🔒</span>
+            )}
           </div>
         ))}
       </div>
