@@ -19,7 +19,7 @@ model User {
   lastLogin   DateTime?
 
   // Subscriptions
-  hasWebAccess  Boolean @default(true)   // 
+  hasWebAccess  Boolean @default(true)   // access to GP101 content
   hasBooksAccess Boolean @default(false) // access to PDF books
 
   devices       Device[]
