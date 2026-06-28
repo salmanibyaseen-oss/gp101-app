@@ -63,7 +63,24 @@ export default function AdminPage() {
     } else { alert("❌ " + data.error); }
   };
 
+  // ✅ Optimistic update - يتغير فوراً في الـ UI
   const handleAction = async (userId: string, action: string, value?: any) => {
+    if (action === "toggleWebAccess") {
+      setUsers(prev => prev.map(u =>
+        u.id === userId ? { ...u, hasWebAccess: value } : u
+      ));
+    }
+    if (action === "toggleBooksAccess") {
+      setUsers(prev => prev.map(u =>
+        u.id === userId ? { ...u, hasBooksAccess: value } : u
+      ));
+    }
+    if (action === "toggleActive") {
+      setUsers(prev => prev.map(u =>
+        u.id === userId ? { ...u, isActive: value } : u
+      ));
+    }
+
     const res = await fetch("/api/admin/users", {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, action, value }),
@@ -204,7 +221,16 @@ export default function AdminPage() {
                     const isExpired = user.expiresAt && new Date(user.expiresAt) < new Date();
                     const isHealthy = user.isActive && !isExpired;
                     return (
-                      <div key={user.id} style={{ background: "#fff", borderRadius: 14, boxShadow: "0 2px 12px rgba(0,0,0,0.05)", overflow: "hidden", border: "1px solid #f0f4f8" }}>
+                      <div key={user.id} style={{
+                        background: "#fff", borderRadius: 14,
+                        boxShadow: "0 2px 12px rgba(0,0,0,0.05)", overflow: "hidden",
+                        // ✅ لون البوردر يتغير حسب حالة الموقع والكتب
+                        border: !user.hasWebAccess && !user.hasBooksAccess
+                          ? "1.5px solid #e5393540"
+                          : !user.hasWebAccess || !user.hasBooksAccess
+                          ? "1.5px solid #fb8c0040"
+                          : "1px solid #f0f4f8"
+                      }}>
                         <div onClick={() => setExpandedUser(expandedUser === user.id ? null : user.id)}
                           style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 16px", cursor: "pointer" }}>
                           <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: isHealthy ? "#e8f5e9" : "#ffebee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>
@@ -213,13 +239,24 @@ export default function AdminPage() {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 700, fontSize: 13, color: "#0B1E3D" }}>{user.name}</div>
                             <div style={{ fontSize: 11, color: "#9e9e9e" }}>{user.email}</div>
-                            {/* Subscription badges */}
+
+                            {/* ✅ Badges واضحة مع مؤشر موقوف/مفعل */}
                             <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
-                              <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 10, background: user.hasWebAccess ? "#e8f5e9" : "#f5f5f5", color: user.hasWebAccess ? "#27ae60" : "#9e9e9e", fontWeight: 600 }}>
-                                🌐 موقع
+                              <span style={{
+                                fontSize: 10, padding: "2px 8px", borderRadius: 10, fontWeight: 700,
+                                background: user.hasWebAccess ? "#e8f5e9" : "#ffebee",
+                                color: user.hasWebAccess ? "#27ae60" : "#e53935",
+                                border: `1px solid ${user.hasWebAccess ? "#27ae60" : "#e53935"}40`
+                              }}>
+                                🌐 {user.hasWebAccess ? "موقع ✓" : "موقع ✗"}
                               </span>
-                              <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 10, background: user.hasBooksAccess ? "#fff8e1" : "#f5f5f5", color: user.hasBooksAccess ? "#f59e0b" : "#9e9e9e", fontWeight: 600 }}>
-                                📚 كتب
+                              <span style={{
+                                fontSize: 10, padding: "2px 8px", borderRadius: 10, fontWeight: 700,
+                                background: user.hasBooksAccess ? "#fff8e1" : "#ffebee",
+                                color: user.hasBooksAccess ? "#f59e0b" : "#e53935",
+                                border: `1px solid ${user.hasBooksAccess ? "#f59e0b" : "#e53935"}40`
+                              }}>
+                                📚 {user.hasBooksAccess ? "كتب ✓" : "كتب ✗"}
                               </span>
                             </div>
                           </div>
@@ -230,8 +267,29 @@ export default function AdminPage() {
                           </div>
                           <span style={{ color: "#9e9e9e", fontSize: 11 }}>{expandedUser === user.id ? "▲" : "▼"}</span>
                         </div>
+
                         {expandedUser === user.id && (
                           <div style={{ borderTop: "1px solid #f0f4f8", padding: 16, background: "#fafbfc" }}>
+
+                            {/* ✅ Status summary واضح */}
+                            <div style={{ display: "flex", gap: 8, marginBottom: 14, padding: "10px 12px", background: "#fff", borderRadius: 10, border: "1px solid #e8edf3" }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7A8D" }}>الحالة:</div>
+                              <span style={{
+                                fontSize: 11, fontWeight: 700,
+                                color: user.isActive ? "#27ae60" : "#e53935"
+                              }}>
+                                {user.isActive ? "✅ الحساب مفعل" : "⏸ الحساب موقوف"}
+                              </span>
+                              <span style={{ color: "#ddd" }}>|</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: user.hasWebAccess ? "#27ae60" : "#e53935" }}>
+                                {user.hasWebAccess ? "🌐 الموقع مفعل" : "🌐 الموقع موقوف"}
+                              </span>
+                              <span style={{ color: "#ddd" }}>|</span>
+                              <span style={{ fontSize: 11, fontWeight: 700, color: user.hasBooksAccess ? "#f59e0b" : "#e53935" }}>
+                                {user.hasBooksAccess ? "📚 الكتب مفعلة" : "📚 الكتب موقوفة"}
+                              </span>
+                            </div>
+
                             <div style={{ marginBottom: 12 }}>
                               <div style={{ fontSize: 11, fontWeight: 700, color: "#6B7A8D", marginBottom: 8 }}>الأجهزة المسجلة ({user.devices.length}/2)</div>
                               {user.devices.length === 0 ? <p style={{ fontSize: 11, color: "#9e9e9e" }}>لا أجهزة مسجلة</p> : (
@@ -248,7 +306,6 @@ export default function AdminPage() {
                               <ActionBtn label="📱 مسح الأجهزة" color="#fb8c00" onClick={() => handleAction(user.id, "resetDevices")} />
                               <ActionBtn label="⏰ تجديد" color="#0E7C86" onClick={() => { const d = prompt("تاريخ الانتهاء (YYYY-MM-DD):"); if (d) handleAction(user.id, "updateExpiry", d); }} />
                               <ActionBtn label="🔑 كلمة مرور" color="#8e24aa" onClick={() => { const pw = prompt("كلمة المرور الجديدة:"); if (pw) handleAction(user.id, "resetPassword", pw); }} />
-                              {/* Subscription toggles */}
                               <ActionBtn
                                 label={user.hasWebAccess ? "🌐 إيقاف الموقع" : "🌐 تفعيل الموقع"}
                                 color={user.hasWebAccess ? "#e65100" : "#0277bd"}
@@ -306,7 +363,6 @@ export default function AdminPage() {
             {/* Books Tab */}
             {activeTab === "books" && (
               <div>
-                {/* Add Book Form */}
                 <div style={{ background: "#fff", borderRadius: 16, padding: 20, boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 20 }}>
                   <div style={{ fontWeight: 800, fontSize: 15, color: "#0B1E3D", marginBottom: 16 }}>📚 إضافة كتاب جديد</div>
                   <form onSubmit={handleAddBook}>
@@ -321,7 +377,6 @@ export default function AdminPage() {
                   </form>
                 </div>
 
-                {/* Books List */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {books.length === 0 ? (
                     <div style={{ textAlign: "center", padding: 40, color: "#9e9e9e", fontSize: 13 }}>لا توجد كتب مضافة</div>
@@ -368,7 +423,6 @@ export default function AdminPage() {
                       <input type="date" value={newUser.expiresAt} onChange={(e) => setNewUser({ ...newUser, expiresAt: e.target.value })}
                         style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 10, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
                     </div>
-                    {/* Subscription options */}
                     <div style={{ marginBottom: 16, background: "#f8fafc", borderRadius: 10, padding: 14 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 10 }}>نوع الاشتراك</div>
                       <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer" }}>
