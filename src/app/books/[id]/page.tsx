@@ -54,12 +54,12 @@ export default function BookViewerPage() {
         const buf = await pdfRes.arrayBuffer();
         if (cancelled) return;
 
-        // PDF.js
-        const pdfjsLib = (await import("pdfjs-dist/legacy/build/pdf")) as any;
+        // PDF.js من CDN مباشرة
+        const pdfjsLib = await import("pdfjs-dist");
         pdfjsLib.GlobalWorkerOptions.workerSrc =
-          "https://unpkg.com/pdfjs-dist@4.0.379/build/pdf.worker.min.mjs";
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
 
-        const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+        const pdf = await (pdfjsLib as any).getDocument({ data: buf }).promise;
         const total = pdf.numPages;
 
         if (cancelled || !containerRef.current) return;
