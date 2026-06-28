@@ -27,6 +27,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   return NextResponse.json({
     url: data.signedUrl,
     title: book.title,
-    watermark: `${user.name || user.email} — ${new Date().toLocaleDateString("ar-EG")}`,
+    watermark: `${user.email} — ${new Date().toLocaleDateString("ar-EG")}`,
   });
 }
