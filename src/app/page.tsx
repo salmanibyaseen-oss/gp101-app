@@ -172,7 +172,7 @@ export default function Home() {
         </h1>
 
         <p style={{ fontSize: 16, color: "rgba(255,255,255,0.75)", maxWidth: 480, margin: "0 auto 36px", lineHeight: 1.7 }}>
-          291 موضوع طبي شامل، 8 تخصصات، يشتغل أوفلاين — صُمِّم خصيصاً للمقيمين وأطباء الامتياز في مصر
+          291 موضوع طبي شامل، 8 تخصصات، يشتغل أوفلاين — صُمِّم خصيصاً للمقيمين وأطباء الامتياز 
         </p>
 
         <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
