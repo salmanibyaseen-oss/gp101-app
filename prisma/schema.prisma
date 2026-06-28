@@ -2,13 +2,11 @@
 generator client {
   provider = "prisma-client-js"
 }
-
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
 }
-
 model User {
   id          String    @id @default(uuid())
   email       String    @unique
@@ -21,7 +19,7 @@ model User {
   lastLogin   DateTime?
 
   // Subscriptions
-  hasWebAccess  Boolean @default(true)   // access to GP101 content
+  hasWebAccess  Boolean @default(true)   // 
   hasBooksAccess Boolean @default(false) // access to PDF books
 
   devices       Device[]
