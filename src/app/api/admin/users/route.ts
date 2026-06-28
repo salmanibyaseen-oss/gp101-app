@@ -19,19 +19,14 @@ export async function GET() {
       select: {
         id: true, email: true, name: true,
         isActive: true, expiresAt: true, createdAt: true, lastLogin: true,
+        hasWebAccess: true,   // ✅ تم إضافته
+        hasBooksAccess: true, // ✅ تم إضافته
         devices: { select: { id: true, label: true, userAgent: true, lastSeen: true } },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    // أضف hasWebAccess و hasBooksAccess بـ default لو مش موجودين في الـ DB
-    const usersWithAccess = users.map((u: any) => ({
-      ...u,
-      hasWebAccess: u.hasWebAccess ?? true,
-      hasBooksAccess: u.hasBooksAccess ?? false,
-    }));
-
-    return NextResponse.json({ users: usersWithAccess });
+    return NextResponse.json({ users });
   } catch (e) {
     return NextResponse.json({ error: "خطأ في السيرفر" }, { status: 500 });
   }
@@ -52,13 +47,9 @@ export async function POST(req: NextRequest) {
   const data: any = {
     email, name, password: hashed,
     expiresAt: expiresAt ? new Date(expiresAt) : null,
+    hasWebAccess: hasWebAccess ?? true,
+    hasBooksAccess: hasBooksAccess ?? false,
   };
-
-  // أضفهم بس لو الـ columns موجودة
-  try {
-    data.hasWebAccess = hasWebAccess ?? true;
-    data.hasBooksAccess = hasBooksAccess ?? false;
-  } catch {}
 
   const user = await prisma.user.create({ data });
   return NextResponse.json({ success: true, userId: user.id });
@@ -80,9 +71,9 @@ export async function PATCH(req: NextRequest) {
       const hashed = await bcrypt.hash(value, 12);
       await prisma.user.update({ where: { id: userId }, data: { password: hashed } });
     } else if (action === "toggleWebAccess") {
-      await (prisma.user as any).update({ where: { id: userId }, data: { hasWebAccess: value } });
+      await prisma.user.update({ where: { id: userId }, data: { hasWebAccess: value } });
     } else if (action === "toggleBooksAccess") {
-      await (prisma.user as any).update({ where: { id: userId }, data: { hasBooksAccess: value } });
+      await prisma.user.update({ where: { id: userId }, data: { hasBooksAccess: value } });
     }
   } catch (e) {
     return NextResponse.json({ error: "خطأ - تأكد من تشغيل الـ migration" }, { status: 500 });
