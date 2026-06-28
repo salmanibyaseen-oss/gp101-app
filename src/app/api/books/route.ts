@@ -19,7 +19,6 @@ export async function GET() {
       description: true,
       coverUrl: true,
       price: true,
-      fileUrl: hasAccess, // يظهر الرابط فقط لو عنده صلاحية
     },
   });
 
