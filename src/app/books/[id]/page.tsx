@@ -8,7 +8,6 @@ export default function BookViewerPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [debugMsg, setDebugMsg] = useState("");
   const [title, setTitle] = useState("");
   const [progress, setProgress] = useState(0);
 
@@ -17,7 +16,6 @@ export default function BookViewerPage() {
 
     async function load() {
       try {
-        setDebugMsg("جاري جلب معلومات الكتاب...");
         const infoRes = await fetch(`/api/books/${id}/view?mode=info`);
         const info = await infoRes.json();
         if (!infoRes.ok) {
@@ -27,7 +25,6 @@ export default function BookViewerPage() {
         }
         setTitle(info.title);
 
-        setDebugMsg("جاري تحميل ملف PDF...");
         const pdfRes = await fetch(`/api/books/${id}/view?mode=pdf`);
         if (!pdfRes.ok) {
           setError(`فشل جلب PDF - status: ${pdfRes.status}`);
@@ -35,34 +32,30 @@ export default function BookViewerPage() {
           return;
         }
 
-        setDebugMsg("جاري قراءة البيانات...");
         const buf = await pdfRes.arrayBuffer();
-        setDebugMsg(`تم تحميل الملف - الحجم: ${(buf.byteLength / 1024).toFixed(0)} KB`);
         if (cancelled) return;
 
-        setDebugMsg("جاري تحميل PDF.js...");
         const pdfjsLib = await import("pdfjs-dist");
-        pdfjsLib.GlobalWorkerOptions.workerSrc =
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs";
 
-        setDebugMsg("جاري فتح الـ PDF...");
-        const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buf) });
-        const pdf = await loadingTask.promise;
+        // استخدم نفس إصدار الـ library المثبت تلقائياً
+        const version = pdfjsLib.version;
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${version}/pdf.worker.min.mjs`;
+
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
         const total = pdf.numPages;
-        setDebugMsg(`عدد الصفحات: ${total}`);
 
         if (cancelled || !containerRef.current) return;
         containerRef.current.innerHTML = "";
 
         for (let i = 1; i <= total; i++) {
           if (cancelled) return;
-          setDebugMsg(`رسم صفحة ${i} من ${total}...`);
           const page = await pdf.getPage(i);
           const viewport = page.getViewport({ scale: 1.5 });
           const canvas = document.createElement("canvas");
           canvas.width = viewport.width;
           canvas.height = viewport.height;
-          canvas.style.cssText = "display:block;margin:0 auto 12px;max-width:100%;border-radius:4px;";
+          canvas.style.cssText = "display:block;margin:0 auto 12px;max-width:100%;border-radius:4px;box-shadow:0 2px 12px rgba(0,0,0,0.3);";
           const ctx = canvas.getContext("2d")!;
           await page.render({ canvasContext: ctx, viewport }).promise;
 
@@ -85,12 +78,12 @@ export default function BookViewerPage() {
           setProgress(Math.round((i / total) * 100));
         }
 
-        setDebugMsg("");
         setLoading(false);
       } catch (e: any) {
-        const msg = e?.message || String(e);
-        setError(`خطأ: ${msg}`);
-        setLoading(false);
+        if (!cancelled) {
+          setError(`خطأ: ${e?.message || String(e)}`);
+          setLoading(false);
+        }
       }
     }
 
@@ -110,13 +103,8 @@ export default function BookViewerPage() {
         {loading && (
           <div style={{ textAlign: "center", padding: 40 }}>
             <div style={{ color: "#fff", fontSize: 14, marginBottom: 12 }}>
-              {progress > 0 ? `${progress}%` : "جاري التحميل..."}
+              {progress > 0 ? `جاري تحميل الصفحات... ${progress}%` : "جاري تحميل الكتاب..."}
             </div>
-            {debugMsg && (
-              <div style={{ color: "#0E7C86", fontSize: 12, background: "rgba(255,255,255,0.05)", padding: 10, borderRadius: 8, marginTop: 8 }}>
-                {debugMsg}
-              </div>
-            )}
             {progress > 0 && (
               <div style={{ background: "rgba(255,255,255,0.1)", borderRadius: 8, height: 6, overflow: "hidden", maxWidth: 300, margin: "12px auto 0" }}>
                 <div style={{ background: "#0E7C86", height: "100%", width: `${progress}%`, transition: "width 0.3s" }} />
