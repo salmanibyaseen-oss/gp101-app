@@ -48,15 +48,12 @@ function CollapsibleSection({
             cursor: "pointer", padding: "8px 0", textAlign: "right",
           }}
         >
-          {/* Toggle arrow */}
           <span style={{
             fontSize: 11, color: color,
             transition: "transform 0.2s",
             transform: open ? "rotate(90deg)" : "rotate(0deg)",
             display: "inline-block", flexShrink: 0,
           }}>▶</span>
-
-          {/* Color bar + title */}
           <div style={{
             width: 4, height: 18, borderRadius: 2,
             background: color, flexShrink: 0,
@@ -69,11 +66,7 @@ function CollapsibleSection({
             {title}
           </span>
         </button>
-
-        {/* Divider */}
         <div style={{ height: 1, background: `${color}22`, marginBottom: 8 }} />
-
-        {/* Content */}
         {open && (
           <div style={{ paddingRight: 22, paddingBottom: 8 }}>
             {children}
@@ -118,52 +111,119 @@ function CollapsibleSection({
   );
 }
 
-// ── Parse Markdown into sections ──────────────────────────────────────────
-function parseIntoSections(content: string) {
-  const lines = content.split("\n");
-  const result: Array<{
-    type: "h1" | "h2" | "h3" | "text";
-    text: string;
-    children: string[];
-  }> = [];
+// ── Notion-style Toggle (for top-level bullet points) ─────────────────────
+function NotionToggle({
+  title,
+  children,
+  color,
+}: {
+  title: string;
+  children: React.ReactNode;
+  color: string;
+}) {
+  const [open, setOpen] = useState(false);
 
-  let current: { type: "h1" | "h2" | "h3" | "text"; text: string; children: string[] } | null = null;
+  return (
+    <div style={{
+      marginBottom: 6,
+      borderRadius: 10,
+      border: `1px solid ${color}22`,
+      overflow: "hidden",
+      background: open ? `${color}06` : "#fafafa",
+      transition: "background 0.2s",
+    }}>
+      {/* Header */}
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center",
+          gap: 10, background: "none", border: "none",
+          cursor: "pointer", padding: "12px 14px", textAlign: "right",
+        }}
+      >
+        {/* Arrow */}
+        <span style={{
+          fontSize: 12, color: color,
+          transition: "transform 0.2s",
+          transform: open ? "rotate(90deg)" : "rotate(0deg)",
+          display: "inline-block", flexShrink: 0,
+        }}>▶</span>
 
-  for (const line of lines) {
-    if (line.startsWith("# ")) {
-      if (current) result.push(current);
-      current = { type: "h1", text: line.slice(2), children: [] };
-    } else if (line.startsWith("## ")) {
-      if (current) result.push(current);
-      current = { type: "h2", text: line.slice(3), children: [] };
-    } else if (line.startsWith("### ")) {
-      if (current) result.push(current);
-      current = { type: "h3", text: line.slice(4), children: [] };
-    } else {
-      if (!current) current = { type: "text", text: "", children: [] };
-      current.children.push(line);
-    }
-  }
-  if (current) result.push(current);
-  return result;
+        {/* Title */}
+        <span style={{
+          fontSize: 15, fontWeight: 700,
+          color: "#0B1E3D", flex: 1,
+          textAlign: "right",
+        }}>
+          {/* Remove ** from title if present */}
+          {title.replace(/\*\*/g, "")}
+        </span>
+
+        {/* Color dot */}
+        <span style={{
+          width: 8, height: 8, borderRadius: "50%",
+          background: color, flexShrink: 0, opacity: 0.7,
+        }} />
+      </button>
+
+      {/* Content */}
+      {open && (
+        <div style={{
+          borderTop: `1px solid ${color}18`,
+          padding: "12px 18px 14px",
+          background: "#fff",
+        }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
 }
 
-// ── Normalize Notion 4-space indent → 2-space so ReactMarkdown nests correctly
+// ── Parse top-level bullet list into toggle items ─────────────────────────
+function parseTopLevelToggles(content: string): Array<{ title: string; body: string }> | null {
+  const lines = content.split("\n");
+
+  // Check if content starts with top-level bullet points (- **Title**)
+  const firstMeaningful = lines.find((l) => l.trim());
+  if (!firstMeaningful || !firstMeaningful.match(/^- \*\*/)) return null;
+
+  const items: Array<{ title: string; body: string[] }> = [];
+  let current: { title: string; body: string[] } | null = null;
+
+  for (const line of lines) {
+    const topMatch = line.match(/^- \*\*(.+?)\*\*(.*)$/);
+    if (topMatch) {
+      if (current) items.push(current);
+      const rest = topMatch[2]?.trim() || "";
+      current = { title: topMatch[1], body: rest ? [rest] : [] };
+    } else {
+      if (current) {
+        // Remove one level of indentation (2 or 4 spaces)
+        current.body.push(line.replace(/^ {2}/, ""));
+      }
+    }
+  }
+  if (current) items.push(current);
+
+  return items.length > 0 ? items.map((i) => ({ title: i.title, body: i.body.join("\n") })) : null;
+}
+
+// ── Normalize Notion 4-space indent → 2-space ─────────────────────────────
 function normalizeIndent(md: string): string {
-  // Content already uses 2-space indent — no conversion needed
   return md;
 }
 
-// ── Mini Markdown renderer (for non-heading content) ─────────────────────
+// ── Mini Markdown renderer ────────────────────────────────────────────────
 function MiniMarkdown({ content, color }: { content: string; color: string }) {
   const normalized = normalizeIndent(content);
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
-        h1: ({ children }) => null,
-        h2: ({ children }) => null,
-        h3: ({ children }) => null,
+        h1: () => null,
+        h2: () => null,
+        h3: () => null,
 
         strong: ({ children }) => (
           <strong style={{ fontWeight: 800, color: "#111827" }}>{children}</strong>
@@ -279,6 +339,36 @@ function MiniMarkdown({ content, color }: { content: string; color: string }) {
   );
 }
 
+// ── Parse Markdown into sections ──────────────────────────────────────────
+function parseIntoSections(content: string) {
+  const lines = content.split("\n");
+  const result: Array<{
+    type: "h1" | "h2" | "h3" | "text";
+    text: string;
+    children: string[];
+  }> = [];
+
+  let current: { type: "h1" | "h2" | "h3" | "text"; text: string; children: string[] } | null = null;
+
+  for (const line of lines) {
+    if (line.startsWith("# ")) {
+      if (current) result.push(current);
+      current = { type: "h1", text: line.slice(2), children: [] };
+    } else if (line.startsWith("## ")) {
+      if (current) result.push(current);
+      current = { type: "h2", text: line.slice(3), children: [] };
+    } else if (line.startsWith("### ")) {
+      if (current) result.push(current);
+      current = { type: "h3", text: line.slice(4), children: [] };
+    } else {
+      if (!current) current = { type: "text", text: "", children: [] };
+      current.children.push(line);
+    }
+  }
+  if (current) result.push(current);
+  return result;
+}
+
 // ── Main ContentView ──────────────────────────────────────────────────────
 export function ContentView({ topic, breadcrumb }: ContentViewProps) {
   const [showNotes, setShowNotes] = useState(false);
@@ -297,7 +387,6 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
 
   const sections = parseIntoSections(topic.content);
 
-  // Group: h1 stays as title, h2/h3 become collapsible, text stays inline
   const renderSections = () => {
     const output: React.ReactNode[] = [];
     let i = 0;
@@ -317,16 +406,29 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
         );
         const h1Body = sec.children.join("\n");
         if (h1Body.trim()) {
-          output.push(
-            <MiniMarkdown key={"h1-body-" + i} content={h1Body} color={sectionColor} />
-          );
+          // ✅ Try to parse as Notion toggles first
+          const toggles = parseTopLevelToggles(h1Body);
+          if (toggles) {
+            output.push(
+              <div key={"h1-toggles-" + i}>
+                {toggles.map((item, idx) => (
+                  <NotionToggle key={idx} title={item.title} color={sectionColor}>
+                    <MiniMarkdown content={item.body} color={sectionColor} />
+                  </NotionToggle>
+                ))}
+              </div>
+            );
+          } else {
+            output.push(
+              <MiniMarkdown key={"h1-body-" + i} content={h1Body} color={sectionColor} />
+            );
+          }
         }
         i++;
         continue;
       }
 
       if (sec.type === "h2") {
-        // ## = plain heading (not collapsible)
         const childContent: string[] = [...sec.children];
         let j = i + 1;
         while (j < sections.length && sections[j].type !== "h2" && sections[j].type !== "h1") {
@@ -356,7 +458,6 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
       }
 
       if (sec.type === "h3") {
-        // ### = collapsible
         const bodyText = sec.children.join("\n");
         output.push(
           <CollapsibleSection key={i} title={sec.text} color={sectionColor} level={3}>
@@ -367,12 +468,25 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
         continue;
       }
 
-      // plain text
+      // plain text — try toggles first
       const bodyText = sec.children.join("\n");
       if (bodyText.trim()) {
-        output.push(
-          <MiniMarkdown key={i} content={bodyText} color={sectionColor} />
-        );
+        const toggles = parseTopLevelToggles(bodyText);
+        if (toggles) {
+          output.push(
+            <div key={i}>
+              {toggles.map((item, idx) => (
+                <NotionToggle key={idx} title={item.title} color={sectionColor}>
+                  <MiniMarkdown content={item.body} color={sectionColor} />
+                </NotionToggle>
+              ))}
+            </div>
+          );
+        } else {
+          output.push(
+            <MiniMarkdown key={i} content={bodyText} color={sectionColor} />
+          );
+        }
       }
       i++;
     }
