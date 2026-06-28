@@ -3,9 +3,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 interface Book {
-  name: string;
-  sizeMB: string | null;
-  url: string | null;
+  id: string;
+  title: string;
+  description: string | null;
+  fileUrl: string;
+  coverUrl: string | null;
+  price: number;
 }
 
 export default function BooksPage() {
@@ -36,36 +39,34 @@ export default function BooksPage() {
 
       <div style={{ padding: 16 }}>
         {loading && <div style={{ textAlign: "center", color: "#9e9e9e", padding: 40 }}>جاري التحميل...</div>}
-
         {!loading && error && (
-          <div style={{ textAlign: "center", color: "#c62828", padding: 24, background: "#fff", borderRadius: 12 }}>
-            {error}
-          </div>
+          <div style={{ textAlign: "center", color: "#c62828", padding: 24, background: "#fff", borderRadius: 12 }}>{error}</div>
         )}
-
         {!loading && !error && books.length === 0 && (
           <div style={{ textAlign: "center", color: "#9e9e9e", padding: 40 }}>لا توجد كتب متاحة حالياً</div>
         )}
 
         {!loading && books.map((book) => (
-          <div key={book.name} style={{
+          <div key={book.id} style={{
             background: "#fff", borderRadius: 16, padding: "16px",
             marginBottom: 12, display: "flex", alignItems: "center", gap: 14,
             boxShadow: "0 2px 12px rgba(0,0,0,0.06)", borderRight: "4px solid #F4A723",
           }}>
-            <div style={{ fontSize: 28 }}>📕</div>
-            <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 700, color: "#0B1E3D", fontSize: 14 }}>{book.name}</div>
-              {book.sizeMB && <div style={{ fontSize: 11, color: "#6B7A8D" }}>{book.sizeMB} MB</div>}
-            </div>
-            {book.url && (
-              <a href={book.url} target="_blank" rel="noopener noreferrer" style={{
-                background: "#0E7C86", color: "#fff", borderRadius: 10,
-                padding: "8px 14px", fontSize: 13, fontWeight: 700, textDecoration: "none",
-              }}>
-                فتح
-              </a>
+            {book.coverUrl ? (
+              <img src={book.coverUrl} alt={book.title} style={{ width: 48, height: 64, objectFit: "cover", borderRadius: 6 }} />
+            ) : (
+              <div style={{ fontSize: 28 }}>📕</div>
             )}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, color: "#0B1E3D", fontSize: 14 }}>{book.title}</div>
+              {book.description && <div style={{ fontSize: 11, color: "#6B7A8D" }}>{book.description}</div>}
+            </div>
+            <a href={book.fileUrl} target="_blank" rel="noopener noreferrer" style={{
+              background: "#0E7C86", color: "#fff", borderRadius: 10,
+              padding: "8px 14px", fontSize: 13, fontWeight: 700, textDecoration: "none",
+            }}>
+              فتح
+            </a>
           </div>
         ))}
       </div>
