@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 interface User {
   id: string; email: string; name: string; isActive: boolean;
   expiresAt: string | null; createdAt: string; lastLogin: string | null;
+  hasWebAccess: boolean; hasBooksAccess: boolean;
   devices: { id: string; label: string; userAgent: string; lastSeen: string }[];
 }
 interface Stats {
@@ -14,28 +15,37 @@ interface Stats {
 interface Request {
   id: string; name: string; email: string; status: string; createdAt: string;
 }
+interface Book {
+  id: string; title: string; description: string | null;
+  fileUrl: string; coverUrl: string | null;
+  isActive: boolean; price: number | null; createdAt: string;
+}
 
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [requests, setRequests] = useState<Request[]>([]);
-  const [activeTab, setActiveTab] = useState<"stats" | "users" | "requests" | "add">("stats");
+  const [books, setBooks] = useState<Book[]>([]);
+  const [activeTab, setActiveTab] = useState<"stats" | "users" | "requests" | "add" | "books">("stats");
   const [loading, setLoading] = useState(true);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
-  const [newUser, setNewUser] = useState({ email: "", name: "", password: "", expiresAt: "" });
+  const [newUser, setNewUser] = useState({ email: "", name: "", password: "", expiresAt: "", hasWebAccess: true, hasBooksAccess: false });
+  const [newBook, setNewBook] = useState({ title: "", description: "", fileUrl: "", coverUrl: "", price: "" });
 
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
-    const [usersRes, statsRes, reqRes] = await Promise.all([
+    const [usersRes, statsRes, reqRes, booksRes] = await Promise.all([
       fetch("/api/admin/users").then((r) => r.json()),
       fetch("/api/admin/stats").then((r) => r.json()),
       fetch("/api/admin/requests").then((r) => r.json()),
+      fetch("/api/admin/books").then((r) => r.json()),
     ]);
     setUsers(usersRes.users || []);
     setStats(statsRes);
     setRequests(reqRes.requests || []);
+    setBooks(booksRes.books || []);
     setLoading(false);
   };
 
@@ -48,7 +58,7 @@ export default function AdminPage() {
     const data = await res.json();
     if (res.ok) {
       alert("✅ تم إضافة المستخدم");
-      setNewUser({ email: "", name: "", password: "", expiresAt: "" });
+      setNewUser({ email: "", name: "", password: "", expiresAt: "", hasWebAccess: true, hasBooksAccess: false });
       fetchData(); setActiveTab("users");
     } else { alert("❌ " + data.error); }
   };
@@ -75,12 +85,41 @@ export default function AdminPage() {
     if (res.ok) fetchData();
   };
 
+  const handleAddBook = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await fetch("/api/admin/books", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...newBook, price: newBook.price ? parseFloat(newBook.price) : null }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert("✅ تم إضافة الكتاب");
+      setNewBook({ title: "", description: "", fileUrl: "", coverUrl: "", price: "" });
+      fetchData();
+    } else { alert("❌ " + data.error); }
+  };
+
+  const handleToggleBook = async (bookId: string, isActive: boolean) => {
+    await fetch("/api/admin/books", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookId, action: "toggleActive", value: !isActive }),
+    });
+    fetchData();
+  };
+
+  const handleDeleteBook = async (bookId: string, title: string) => {
+    if (!confirm(`حذف كتاب "${title}"؟`)) return;
+    await fetch(`/api/admin/books?bookId=${bookId}`, { method: "DELETE" });
+    fetchData();
+  };
+
   const pendingCount = requests.filter((r) => r.status === "pending").length;
 
   const tabs = [
     { key: "stats", label: "إحصائيات", icon: "📊" },
     { key: "users", label: `المستخدمون (${users.length})`, icon: "👥" },
     { key: "requests", label: `طلبات التسجيل${pendingCount > 0 ? ` (${pendingCount})` : ""}`, icon: "📋" },
+    { key: "books", label: `الكتب (${books.length})`, icon: "📚" },
     { key: "add", label: "إضافة مستخدم", icon: "➕" },
   ];
 
@@ -109,7 +148,7 @@ export default function AdminPage() {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: "flex", gap: 4, marginTop: 16 }}>
+        <div style={{ display: "flex", gap: 4, marginTop: 16, flexWrap: "wrap" }}>
           {tabs.map((tab) => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key as any)}
               style={{ padding: "8px 14px", borderRadius: "8px 8px 0 0", fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none", transition: "all 0.15s", position: "relative",
@@ -174,6 +213,15 @@ export default function AdminPage() {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontWeight: 700, fontSize: 13, color: "#0B1E3D" }}>{user.name}</div>
                             <div style={{ fontSize: 11, color: "#9e9e9e" }}>{user.email}</div>
+                            {/* Subscription badges */}
+                            <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+                              <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 10, background: user.hasWebAccess ? "#e8f5e9" : "#f5f5f5", color: user.hasWebAccess ? "#27ae60" : "#9e9e9e", fontWeight: 600 }}>
+                                🌐 موقع
+                              </span>
+                              <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 10, background: user.hasBooksAccess ? "#fff8e1" : "#f5f5f5", color: user.hasBooksAccess ? "#f59e0b" : "#9e9e9e", fontWeight: 600 }}>
+                                📚 كتب
+                              </span>
+                            </div>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 11, color: "#6B7A8D" }}>
                             <span>📱 {user.devices.length}/2</span>
@@ -200,6 +248,17 @@ export default function AdminPage() {
                               <ActionBtn label="📱 مسح الأجهزة" color="#fb8c00" onClick={() => handleAction(user.id, "resetDevices")} />
                               <ActionBtn label="⏰ تجديد" color="#0E7C86" onClick={() => { const d = prompt("تاريخ الانتهاء (YYYY-MM-DD):"); if (d) handleAction(user.id, "updateExpiry", d); }} />
                               <ActionBtn label="🔑 كلمة مرور" color="#8e24aa" onClick={() => { const pw = prompt("كلمة المرور الجديدة:"); if (pw) handleAction(user.id, "resetPassword", pw); }} />
+                              {/* Subscription toggles */}
+                              <ActionBtn
+                                label={user.hasWebAccess ? "🌐 إيقاف الموقع" : "🌐 تفعيل الموقع"}
+                                color={user.hasWebAccess ? "#e65100" : "#0277bd"}
+                                onClick={() => handleAction(user.id, "toggleWebAccess", !user.hasWebAccess)}
+                              />
+                              <ActionBtn
+                                label={user.hasBooksAccess ? "📚 إيقاف الكتب" : "📚 تفعيل الكتب"}
+                                color={user.hasBooksAccess ? "#e65100" : "#F4A723"}
+                                onClick={() => handleAction(user.id, "toggleBooksAccess", !user.hasBooksAccess)}
+                              />
                               <ActionBtn label="🗑 حذف" color="#e53935" onClick={() => handleDelete(user.id, user.email)} />
                             </div>
                           </div>
@@ -218,58 +277,80 @@ export default function AdminPage() {
                   <div style={{ textAlign: "center", padding: 60, color: "#9e9e9e" }}>لا توجد طلبات تسجيل</div>
                 ) : (
                   requests.map((req) => (
-                    <div key={req.id} style={{
-                      background: "#fff", borderRadius: 14, padding: "14px 16px",
-                      boxShadow: "0 2px 12px rgba(0,0,0,0.05)", border: "1px solid #f0f4f8",
-                      display: "flex", alignItems: "center", gap: 12,
-                    }}>
-                      {/* Status badge */}
-                      <div style={{
-                        width: 38, height: 38, borderRadius: 10, flexShrink: 0,
-                        background: req.status === "pending" ? "#fff8e1" : req.status === "approved" ? "#e8f5e9" : "#ffebee",
-                        display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
-                      }}>
+                    <div key={req.id} style={{ background: "#fff", borderRadius: 14, padding: "14px 16px", boxShadow: "0 2px 12px rgba(0,0,0,0.05)", border: "1px solid #f0f4f8", display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{ width: 38, height: 38, borderRadius: 10, flexShrink: 0, background: req.status === "pending" ? "#fff8e1" : req.status === "approved" ? "#e8f5e9" : "#ffebee", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>
                         {req.status === "pending" ? "⏳" : req.status === "approved" ? "✅" : "❌"}
                       </div>
-
                       <div style={{ flex: 1 }}>
                         <div style={{ fontWeight: 700, fontSize: 13, color: "#0B1E3D" }}>{req.name}</div>
                         <div style={{ fontSize: 11, color: "#9e9e9e" }}>{req.email}</div>
-                        <div style={{ fontSize: 10, color: "#bbb", marginTop: 2 }}>
-                          {new Date(req.createdAt).toLocaleString("ar-EG")}
-                        </div>
+                        <div style={{ fontSize: 10, color: "#bbb", marginTop: 2 }}>{new Date(req.createdAt).toLocaleString("ar-EG")}</div>
                       </div>
-
-                      {/* Status label */}
-                      <span style={{
-                        fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20,
-                        background: req.status === "pending" ? "#fff8e1" : req.status === "approved" ? "#e8f5e9" : "#ffebee",
-                        color: req.status === "pending" ? "#f59e0b" : req.status === "approved" ? "#27ae60" : "#e53935",
-                      }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: req.status === "pending" ? "#fff8e1" : req.status === "approved" ? "#e8f5e9" : "#ffebee", color: req.status === "pending" ? "#f59e0b" : req.status === "approved" ? "#27ae60" : "#e53935" }}>
                         {req.status === "pending" ? "معلق" : req.status === "approved" ? "مقبول" : "مرفوض"}
                       </span>
-
-                      {/* Actions — pending only */}
                       {req.status === "pending" && (
                         <div style={{ display: "flex", gap: 8 }}>
-                          <button
-                            onClick={() => {
-                              const d = prompt("تاريخ انتهاء الاشتراك (YYYY-MM-DD) — اتركه فارغاً بدون انتهاء:");
-                              handleRequest(req.id, "approve", d || undefined);
-                            }}
-                            style={{ fontSize: 12, padding: "6px 14px", borderRadius: 8, border: "none", background: "#27ae60", color: "#fff", cursor: "pointer", fontWeight: 700 }}>
-                            ✅ قبول
-                          </button>
-                          <button
-                            onClick={() => handleRequest(req.id, "reject")}
-                            style={{ fontSize: 12, padding: "6px 14px", borderRadius: 8, border: "none", background: "#e53935", color: "#fff", cursor: "pointer", fontWeight: 700 }}>
-                            ❌ رفض
-                          </button>
+                          <button onClick={() => { const d = prompt("تاريخ انتهاء الاشتراك (YYYY-MM-DD) — اتركه فارغاً بدون انتهاء:"); handleRequest(req.id, "approve", d || undefined); }}
+                            style={{ fontSize: 12, padding: "6px 14px", borderRadius: 8, border: "none", background: "#27ae60", color: "#fff", cursor: "pointer", fontWeight: 700 }}>✅ قبول</button>
+                          <button onClick={() => handleRequest(req.id, "reject")}
+                            style={{ fontSize: 12, padding: "6px 14px", borderRadius: 8, border: "none", background: "#e53935", color: "#fff", cursor: "pointer", fontWeight: 700 }}>❌ رفض</button>
                         </div>
                       )}
                     </div>
                   ))
                 )}
+              </div>
+            )}
+
+            {/* Books Tab */}
+            {activeTab === "books" && (
+              <div>
+                {/* Add Book Form */}
+                <div style={{ background: "#fff", borderRadius: 16, padding: 20, boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 20 }}>
+                  <div style={{ fontWeight: 800, fontSize: 15, color: "#0B1E3D", marginBottom: 16 }}>📚 إضافة كتاب جديد</div>
+                  <form onSubmit={handleAddBook}>
+                    <Field label="عنوان الكتاب" value={newBook.title} onChange={(v) => setNewBook({ ...newBook, title: v })} placeholder="مرجع الطبيب العام" />
+                    <Field label="وصف مختصر (اختياري)" value={newBook.description} onChange={(v) => setNewBook({ ...newBook, description: v })} placeholder="وصف الكتاب..." />
+                    <Field label="رابط ملف PDF (Supabase Storage)" value={newBook.fileUrl} onChange={(v) => setNewBook({ ...newBook, fileUrl: v })} placeholder="https://..." />
+                    <Field label="رابط صورة الغلاف (اختياري)" value={newBook.coverUrl} onChange={(v) => setNewBook({ ...newBook, coverUrl: v })} placeholder="https://..." />
+                    <Field label="السعر بالجنيه (اختياري)" value={newBook.price} onChange={(v) => setNewBook({ ...newBook, price: v })} placeholder="150" />
+                    <button type="submit" style={{ padding: "10px 24px", background: "linear-gradient(135deg, #0B1E3D, #0E7C86)", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                      إضافة الكتاب
+                    </button>
+                  </form>
+                </div>
+
+                {/* Books List */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {books.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: 40, color: "#9e9e9e", fontSize: 13 }}>لا توجد كتب مضافة</div>
+                  ) : (
+                    books.map((book) => (
+                      <div key={book.id} style={{ background: "#fff", borderRadius: 14, padding: "14px 16px", boxShadow: "0 2px 12px rgba(0,0,0,0.05)", border: "1px solid #f0f4f8", display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{ width: 44, height: 44, borderRadius: 10, background: book.isActive ? "#fff8e1" : "#f5f5f5", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>
+                          📚
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontWeight: 700, fontSize: 13, color: "#0B1E3D" }}>{book.title}</div>
+                          {book.description && <div style={{ fontSize: 11, color: "#6B7A8D", marginTop: 2 }}>{book.description}</div>}
+                          {book.price && <div style={{ fontSize: 11, color: "#F4A723", marginTop: 2, fontWeight: 600 }}>{book.price} جنيه</div>}
+                        </div>
+                        <span style={{ fontSize: 11, padding: "3px 10px", borderRadius: 20, fontWeight: 600, background: book.isActive ? "#e8f5e9" : "#ffebee", color: book.isActive ? "#27ae60" : "#e53935" }}>
+                          {book.isActive ? "✅ مفعّل" : "⏸ موقوف"}
+                        </span>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <ActionBtn
+                            label={book.isActive ? "⏸ إيقاف" : "▶ تفعيل"}
+                            color={book.isActive ? "#e53935" : "#27ae60"}
+                            onClick={() => handleToggleBook(book.id, book.isActive)}
+                          />
+                          <ActionBtn label="🗑 حذف" color="#e53935" onClick={() => handleDeleteBook(book.id, book.title)} />
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
               </div>
             )}
 
@@ -286,6 +367,18 @@ export default function AdminPage() {
                       <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>تاريخ انتهاء الاشتراك (اختياري)</label>
                       <input type="date" value={newUser.expiresAt} onChange={(e) => setNewUser({ ...newUser, expiresAt: e.target.value })}
                         style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 10, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+                    </div>
+                    {/* Subscription options */}
+                    <div style={{ marginBottom: 16, background: "#f8fafc", borderRadius: 10, padding: 14 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#374151", marginBottom: 10 }}>نوع الاشتراك</div>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, cursor: "pointer" }}>
+                        <input type="checkbox" checked={newUser.hasWebAccess} onChange={(e) => setNewUser({ ...newUser, hasWebAccess: e.target.checked })} />
+                        <span style={{ fontSize: 13 }}>🌐 الوصول للموقع (GP101)</span>
+                      </label>
+                      <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                        <input type="checkbox" checked={newUser.hasBooksAccess} onChange={(e) => setNewUser({ ...newUser, hasBooksAccess: e.target.checked })} />
+                        <span style={{ fontSize: 13 }}>📚 الوصول للكتب</span>
+                      </label>
                     </div>
                     <button type="submit" style={{ width: "100%", padding: "12px", background: "linear-gradient(135deg, #0B1E3D, #0E7C86)", color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                       إضافة المستخدم
@@ -322,7 +415,7 @@ function Field({ label, value, onChange, placeholder, type = "text" }: { label: 
   return (
     <div style={{ marginBottom: 16 }}>
       <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 }}>{label}</label>
-      <input type={type} value={value} required onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+      <input type={type} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
         dir={type === "email" || type === "password" ? "ltr" : "rtl"}
         style={{ width: "100%", padding: "10px 12px", border: "1px solid #e5e7eb", borderRadius: 10, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
     </div>
