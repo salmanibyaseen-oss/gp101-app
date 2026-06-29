@@ -319,7 +319,7 @@ export default function DashboardPage() {
         >
           <div style={{ fontSize: 32 }}>📚</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 15, fontWeight: 700, color: "#0B1E3D" }}>الكتب الطبية</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "#0B1E3D" }}>E-guides </div>
             <div style={{ fontSize: 11, color: "#6B7A8D", marginTop: 2 }}>
               {userInfo.hasBooksAccess || userInfo.isAdmin ? "اضغط للوصول للكتب" : "🔒 يتطلب اشتراك منفصل"}
             </div>
