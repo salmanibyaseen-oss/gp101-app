@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Topic } from "@/lib/content";
 import { NotesPanel } from "./NotesPanel";
- 
+
 const SECTION_COLORS: Record<string, string> = {
   "Medicine الباطنه": "#c0392b",
   "Surgery الجراحه": "#2980b9",
@@ -15,12 +15,12 @@ const SECTION_COLORS: Record<string, string> = {
   "Dermatology جلديه": "#8e44ad",
   "Toxicology سموم": "#7f8c8d",
 };
- 
+
 interface ContentViewProps {
   topic: Topic;
   breadcrumb: { section: string; subsection: string } | null;
 }
- 
+
 // ── Collapsible Section Component ─────────────────────────────────────────
 function CollapsibleSection({
   title,
@@ -36,7 +36,7 @@ function CollapsibleSection({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
- 
+
   if (level === 2) {
     return (
       <div style={{ marginTop: 20, marginBottom: 4 }}>
@@ -75,7 +75,7 @@ function CollapsibleSection({
       </div>
     );
   }
- 
+
   // H3 — sub-collapsible
   return (
     <div style={{ marginTop: 10, marginBottom: 2 }}>
@@ -84,7 +84,8 @@ function CollapsibleSection({
         style={{
           width: "100%", display: "flex", alignItems: "center",
           gap: 8, background: "none", border: "none",
-          cursor: "pointer", padding: "5px 0", textAlign: "right",
+          cursor: "pointer", padding: "5px 0",
+          textAlign: "left", direction: "ltr",
         }}
       >
         <span style={{
@@ -95,22 +96,22 @@ function CollapsibleSection({
         }}>▶</span>
         <span style={{
           fontSize: 13, fontWeight: 700,
-          color: "#374151", flex: 1, textAlign: "right",
-          borderRight: `2px solid ${color}44`,
-          paddingRight: 8,
+          color: "#374151", flex: 1, textAlign: "left",
+          borderLeft: `2px solid ${color}44`,
+          paddingLeft: 8,
         }}>
           {title}
         </span>
       </button>
       {open && (
-        <div style={{ paddingRight: 20, marginTop: 2 }}>
+        <div style={{ paddingLeft: 20, marginTop: 2, direction: "ltr" }}>
           {children}
         </div>
       )}
     </div>
   );
 }
- 
+
 // ── Notion-style Toggle (for top-level bullet points) ─────────────────────
 function NotionToggle({
   title,
@@ -122,7 +123,7 @@ function NotionToggle({
   color: string;
 }) {
   const [open, setOpen] = useState(false);
- 
+
   return (
     <div style={{
       marginBottom: 6,
@@ -138,7 +139,8 @@ function NotionToggle({
         style={{
           width: "100%", display: "flex", alignItems: "center",
           gap: 10, background: "none", border: "none",
-          cursor: "pointer", padding: "12px 14px", textAlign: "right",
+          cursor: "pointer", padding: "12px 14px",
+          textAlign: "left", direction: "ltr",
         }}
       >
         {/* Arrow */}
@@ -148,30 +150,31 @@ function NotionToggle({
           transform: open ? "rotate(90deg)" : "rotate(0deg)",
           display: "inline-block", flexShrink: 0,
         }}>▶</span>
- 
+
         {/* Title */}
         <span style={{
           fontSize: 15, fontWeight: 700,
           color: "#0B1E3D", flex: 1,
-          textAlign: "right",
+          textAlign: "left",
         }}>
-          {/* Remove ** from title if present */}
-          {title.replace(/\*\*/g, "")}
+          {title.replace(/\*{1,3}/g, "")}
         </span>
- 
+
         {/* Color dot */}
         <span style={{
           width: 8, height: 8, borderRadius: "50%",
           background: color, flexShrink: 0, opacity: 0.7,
         }} />
       </button>
- 
+
       {/* Content */}
       {open && (
         <div style={{
           borderTop: `1px solid ${color}18`,
           padding: "12px 18px 14px",
           background: "#fff",
+          direction: "ltr",
+          textAlign: "left",
         }}>
           {children}
         </div>
@@ -179,18 +182,18 @@ function NotionToggle({
     </div>
   );
 }
- 
+
 // ── Parse top-level bullet list into toggle items ─────────────────────────
 function parseTopLevelToggles(content: string): Array<{ title: string; body: string }> | null {
   const lines = content.split("\n");
- 
+
   // Check if content starts with top-level bullet points (- **Title** or - ***Title***)
   const firstMeaningful = lines.find((l) => l.trim());
   if (!firstMeaningful || !firstMeaningful.match(/^- \*{1,3}/)) return null;
- 
+
   const items: Array<{ title: string; body: string[] }> = [];
   let current: { title: string; body: string[] } | null = null;
- 
+
   for (const line of lines) {
     const topMatch = line.match(/^- \*{1,3}(.+?)\*{1,3}(.*)$/);
     if (topMatch) {
@@ -205,15 +208,15 @@ function parseTopLevelToggles(content: string): Array<{ title: string; body: str
     }
   }
   if (current) items.push(current);
- 
+
   return items.length > 0 ? items.map((i) => ({ title: i.title, body: i.body.join("\n") })) : null;
 }
- 
+
 // ── Normalize Notion 4-space indent → 2-space ─────────────────────────────
 function normalizeIndent(md: string): string {
   return md;
 }
- 
+
 // ── Mini Markdown renderer ────────────────────────────────────────────────
 function MiniMarkdown({ content, color }: { content: string; color: string }) {
   const normalized = normalizeIndent(content);
@@ -224,19 +227,19 @@ function MiniMarkdown({ content, color }: { content: string; color: string }) {
         h1: () => null,
         h2: () => null,
         h3: () => null,
- 
+
         strong: ({ children }) => (
           <strong style={{ fontWeight: 800, color: "#111827" }}>{children}</strong>
         ),
- 
+
         ul: ({ children }) => (
           <ul style={{ listStyle: "none", padding: 0, margin: "4px 0" }}>{children}</ul>
         ),
- 
+
         ol: ({ children }) => (
           <ol style={{ listStyle: "none", padding: 0, margin: "4px 0" }}>{children}</ol>
         ),
- 
+
         li: ({ children }) => {
           const childArray = Array.isArray(children) ? children : [children];
           const first: React.ReactNode[] = [];
@@ -272,13 +275,13 @@ function MiniMarkdown({ content, color }: { content: string; color: string }) {
             </li>
           );
         },
- 
+
         p: ({ children }) => (
           <p style={{ fontSize: 13, color: "#374151", lineHeight: 1.8, marginBottom: 6 }}>
             {children}
           </p>
         ),
- 
+
         blockquote: ({ children }) => (
           <blockquote style={{
             borderRight: `4px solid ${color}`,
@@ -291,7 +294,7 @@ function MiniMarkdown({ content, color }: { content: string; color: string }) {
             {children}
           </blockquote>
         ),
- 
+
         table: ({ children }) => (
           <div style={{ overflowX: "auto", margin: "10px 0" }}>
             <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
@@ -311,7 +314,7 @@ function MiniMarkdown({ content, color }: { content: string; color: string }) {
             padding: "6px 10px", color: "#374151", fontSize: 12,
           }}>{children}</td>
         ),
- 
+
         code: ({ children, className }) => {
           const isBlock = className?.includes("language-");
           return isBlock ? (
@@ -338,7 +341,7 @@ function MiniMarkdown({ content, color }: { content: string; color: string }) {
     </ReactMarkdown>
   );
 }
- 
+
 // ── Parse Markdown into sections ──────────────────────────────────────────
 function parseIntoSections(content: string) {
   const lines = content.split("\n");
@@ -347,9 +350,9 @@ function parseIntoSections(content: string) {
     text: string;
     children: string[];
   }> = [];
- 
+
   let current: { type: "h1" | "h2" | "h3" | "text"; text: string; children: string[] } | null = null;
- 
+
   for (const line of lines) {
     if (line.startsWith("# ")) {
       if (current) result.push(current);
@@ -368,32 +371,32 @@ function parseIntoSections(content: string) {
   if (current) result.push(current);
   return result;
 }
- 
+
 // ── Main ContentView ──────────────────────────────────────────────────────
 export function ContentView({ topic, breadcrumb }: ContentViewProps) {
   const [showNotes, setShowNotes] = useState(false);
   const [hasNote, setHasNote] = useState(false);
- 
+
   const sectionColor = breadcrumb
     ? SECTION_COLORS[breadcrumb.section] || "#1e3a5f"
     : "#1e3a5f";
- 
+
   useEffect(() => {
     fetch(`/api/notes?slug=${topic.slug}`)
       .then((r) => r.json())
       .then((d) => setHasNote(!!d.note?.content))
       .catch(() => {});
   }, [topic.slug]);
- 
+
   const sections = parseIntoSections(topic.content);
- 
+
   const renderSections = () => {
     const output: React.ReactNode[] = [];
     let i = 0;
- 
+
     while (i < sections.length) {
       const sec = sections[i];
- 
+
       if (sec.type === "h1") {
         output.push(
           <h1 key={"h1-" + i} style={{
@@ -427,7 +430,7 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
         i++;
         continue;
       }
- 
+
       if (sec.type === "h2") {
         const childContent: string[] = [...sec.children];
         let j = i + 1;
@@ -456,7 +459,7 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
         i = j;
         continue;
       }
- 
+
       if (sec.type === "h3") {
         const bodyText = sec.children.join("\n");
         output.push(
@@ -467,7 +470,7 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
         i++;
         continue;
       }
- 
+
       // plain text — try toggles first
       const bodyText = sec.children.join("\n");
       if (bodyText.trim()) {
@@ -490,15 +493,15 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
       }
       i++;
     }
- 
+
     return output;
   };
- 
+
   return (
     <div className="flex h-full">
       <div className="flex-1 overflow-auto">
         <div className="max-w-3xl mx-auto px-4 py-6">
- 
+
           {/* Breadcrumb */}
           {breadcrumb && (
             <div className="flex items-center gap-2 text-xs text-gray-400 mb-4">
@@ -507,12 +510,12 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
               <span>{breadcrumb.subsection}</span>
             </div>
           )}
- 
+
           {/* Content */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6" dir="rtl">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6" dir="ltr">
             {renderSections()}
           </div>
- 
+
           {/* Notes button */}
           <div className="mt-4 flex justify-end">
             <button
@@ -531,7 +534,7 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
           </div>
         </div>
       </div>
- 
+
       {showNotes && (
         <NotesPanel
           slug={topic.slug}
