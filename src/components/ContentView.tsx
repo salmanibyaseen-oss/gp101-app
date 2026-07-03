@@ -312,13 +312,9 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
       if (sec.type === "h2") {
         const childContent: string[] = [...sec.children];
         let j = i + 1;
-        while (j < sections.length && sections[j].type !== "h2" && sections[j].type !== "h1") {
+        while (j < sections.length && sections[j].type !== "h2" && sections[j].type !== "h1" && sections[j].type !== "h3") {
           const sub = sections[j];
-          if (sub.type === "h3") {
-            childContent.push(`### ${sub.text}`, ...sub.children);
-          } else {
-            childContent.push(...sub.children);
-          }
+          childContent.push(...sub.children);
           j++;
         }
         const bodyText = childContent.join("\n");
@@ -339,9 +335,15 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
       if (sec.type === "h3") {
         const bodyText = sec.children.join("\n");
         output.push(
-          <CollapsibleSection key={i} title={sec.text} color={sectionColor} level={3}>
-            <MiniMarkdown content={bodyText} color={sectionColor} />
-          </CollapsibleSection>
+          <div key={"h3-" + i}>
+            <h3 style={{
+              color: sectionColor, fontSize: 15, fontWeight: 700,
+              marginTop: 16, marginBottom: 8,
+              paddingLeft: 10,
+              borderLeft: `3px solid ${sectionColor}66`,
+            }}>{sec.text}</h3>
+            {bodyText.trim() && <MiniMarkdown content={bodyText} color={sectionColor} />}
+          </div>
         );
         i++;
         continue;
