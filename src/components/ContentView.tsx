@@ -97,7 +97,7 @@ function NotionToggle({ title, children, color }: { title: string; children: Rea
           display: "inline-block", flexShrink: 0,
         }}>▶</span>
         <span style={{ fontSize: 15, fontWeight: 700, color: "#0B1E3D", flex: 1, textAlign: "left" }}>
-          {title.replace(/\*{1,3}/g, "")}
+          {title.replace(/%%/g, "")}
         </span>
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0, opacity: 0.7 }} />
       </button>
@@ -117,13 +117,13 @@ function NotionToggle({ title, children, color }: { title: string; children: Rea
 function parseTopLevelToggles(content: string): Array<{ title: string; body: string }> | null {
   const lines = content.split("\n");
   const firstMeaningful = lines.find((l) => l.trim());
-  if (!firstMeaningful || !firstMeaningful.match(/^- \*{1,3}/)) return null;
+  if (!firstMeaningful || !firstMeaningful.match(/^- %%/)) return null;
 
   const items: Array<{ title: string; body: string[] }> = [];
   let current: { title: string; body: string[] } | null = null;
 
   for (const line of lines) {
-    const topMatch = line.match(/^- \*{1,3}(.+?)\*{1,3}(.*)$/);
+    const topMatch = line.match(/^- %%(.+?)?%%(.*)$/);
     if (topMatch) {
       if (current) items.push(current);
       const rest = topMatch[2]?.trim() || "";
