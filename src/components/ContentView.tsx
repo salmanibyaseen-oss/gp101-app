@@ -340,6 +340,10 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
 
       if (sec.type === "h3") {
         const bodyText = sec.children.join("\n");
+        const bodyLines = bodyText.split("\n");
+        const firstToggleIdx = bodyLines.findIndex(l => l.match(/^- %%/));
+        const preText = firstToggleIdx > 0 ? bodyLines.slice(0, firstToggleIdx).join("\n") : "";
+        const toggleText = firstToggleIdx >= 0 ? bodyLines.slice(firstToggleIdx).join("\n") : bodyText;
         output.push(
           <div key={"h3-" + i}>
             <h3 style={{
@@ -348,7 +352,8 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
               paddingLeft: 10,
               borderLeft: `3px solid ${sectionColor}66`,
             }}>{sec.text}</h3>
-            {bodyText.trim() && <MiniMarkdown content={bodyText} color={sectionColor} />}
+            {preText.trim() && <MiniMarkdown content={preText} color={sectionColor} />}
+            {toggleText.trim() && renderContent(toggleText)}
           </div>
         );
         i++;
