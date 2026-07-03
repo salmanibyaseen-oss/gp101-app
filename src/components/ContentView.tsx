@@ -318,6 +318,11 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
           j++;
         }
         const bodyText = childContent.join("\n");
+        // split body into pre-toggle text and toggle items
+        const bodyLines = bodyText.split("\n");
+        const firstToggleIdx = bodyLines.findIndex(l => l.match(/^- %%/));
+        const preText = firstToggleIdx > 0 ? bodyLines.slice(0, firstToggleIdx).join("\n") : "";
+        const toggleText = firstToggleIdx >= 0 ? bodyLines.slice(firstToggleIdx).join("\n") : bodyText;
         output.push(
           <div key={i}>
             <h2 style={{
@@ -325,7 +330,8 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
               borderBottom: `2px solid ${sectionColor}33`,
               paddingBottom: 6, marginTop: 20, marginBottom: 10,
             }}>{sec.text}</h2>
-            {renderContent(bodyText)}
+            {preText.trim() && <MiniMarkdown content={preText} color={sectionColor} />}
+            {renderContent(toggleText)}
           </div>
         );
         i = j;
