@@ -96,7 +96,7 @@ function NotionToggle({ title, children, color }: { title: string; children: Rea
           transform: open ? "rotate(90deg)" : "rotate(0deg)",
           display: "inline-block", flexShrink: 0,
         }}>▶</span>
-        <span style={{ fontSize: 15, fontWeight: 700, color: "#0B1E3D", flex: 1, textAlign: "left" }}>
+        <span style={{ fontSize: 15, fontWeight: 700, color: "#0B1E3D", flex: 1, textAlign: "left", unicodeBidi: "plaintext" }}>
           {title.replace(/%%/g, "")}
         </span>
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0, opacity: 0.7 }} />
@@ -117,19 +117,19 @@ function NotionToggle({ title, children, color }: { title: string; children: Rea
 function parseTopLevelToggles(content: string): Array<{ title: string; body: string }> | null {
   const lines = content.split("\n");
   const firstMeaningful = lines.find((l) => l.trim());
-  if (!firstMeaningful || !firstMeaningful.match(/^- %%/)) return null;
+  if (!firstMeaningful || !firstMeaningful.trim().match(/^- %%/)) return null;
 
   const items: Array<{ title: string; body: string[] }> = [];
   let current: { title: string; body: string[] } | null = null;
 
   for (const line of lines) {
-    const topMatch = line.match(/^- %%(.+?)?%%(.*)$/);
+    const topMatch = line.trim().match(/^- %%(.+?)?%%(.*)$/);
     if (topMatch) {
       if (current) items.push(current);
       const rest = topMatch[2]?.trim() || "";
       current = { title: topMatch[1], body: rest ? [rest] : [] };
     } else {
-      if (current) current.body.push(line.replace(/^ {2}/, ""));
+      if (current) current.body.push(line.replace(/^\s{1,4}/, ""));
     }
   }
   if (current) items.push(current);
@@ -147,7 +147,7 @@ function MiniMarkdown({ content, color }: { content: string; color: string }) {
         h3: () => null,
 
         strong: ({ children }) => (
-          <strong style={{ fontWeight: 800, color: "#111827" }}>{children}</strong>
+          <strong style={{ fontWeight: 800, color: "#111827", unicodeBidi: "plaintext" }}>{children}</strong>
         ),
 
         ul: ({ children }) => (
@@ -178,7 +178,7 @@ function MiniMarkdown({ content, color }: { content: string; color: string }) {
                   marginTop: 6, width: 6, height: 6, borderRadius: "50%",
                   flexShrink: 0, background: color, opacity: 0.7,
                 }} />
-                <span style={{ fontSize: 13, color: "#1f2937", lineHeight: 1.7, flex: 1, textAlign: "left" }}>
+                <span style={{ fontSize: 13, color: "#1f2937", lineHeight: 1.7, flex: 1, textAlign: "left", unicodeBidi: "plaintext" }}>
                   {first}
                 </span>
               </div>
@@ -190,7 +190,7 @@ function MiniMarkdown({ content, color }: { content: string; color: string }) {
         },
 
         p: ({ children }) => (
-          <p style={{ fontSize: 13, color: "#374151", lineHeight: 1.8, marginBottom: 6 }}>{children}</p>
+          <p style={{ fontSize: 13, color: "#374151", lineHeight: 1.8, marginBottom: 6, unicodeBidi: "plaintext" }}>{children}</p>
         ),
 
         blockquote: ({ children }) => (
@@ -198,6 +198,7 @@ function MiniMarkdown({ content, color }: { content: string; color: string }) {
             borderLeft: `4px solid ${color}`, background: `${color}0d`,
             paddingLeft: 14, paddingRight: 10, paddingTop: 8, paddingBottom: 8,
             margin: "10px 0", borderRadius: "8px 0 0 8px", fontSize: 13, color: "#374151",
+            unicodeBidi: "plaintext",
           }}>{children}</blockquote>
         ),
 
@@ -207,10 +208,10 @@ function MiniMarkdown({ content, color }: { content: string; color: string }) {
           </div>
         ),
         th: ({ children }) => (
-          <th style={{ background: color, color: "#fff", padding: "7px 10px", textAlign: "left", fontWeight: 700, fontSize: 12 }}>{children}</th>
+          <th style={{ background: color, color: "#fff", padding: "7px 10px", textAlign: "left", fontWeight: 700, fontSize: 12, unicodeBidi: "plaintext" }}>{children}</th>
         ),
         td: ({ children }) => (
-          <td style={{ border: "1px solid #e5e7eb", padding: "6px 10px", color: "#374151", fontSize: 12 }}>{children}</td>
+          <td style={{ border: "1px solid #e5e7eb", padding: "6px 10px", color: "#374151", fontSize: 12, unicodeBidi: "plaintext" }}>{children}</td>
         ),
 
         code: ({ children, className }) => {
@@ -301,15 +302,16 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
             color: sectionColor, fontSize: 22, fontWeight: 900,
             borderBottom: `3px solid ${sectionColor}`,
             paddingBottom: 10, marginBottom: 16, letterSpacing: 0.3,
+            unicodeBidi: "plaintext",
           }}>{sec.text}</h1>
         );
         const h1Body = sec.children.join("\n");
         const h1BodyLines = h1Body.split("\n");
-        const firstToggleIdx = h1BodyLines.findIndex(l => l.trim().match(/^- %%/));
-        const preText = firstToggleIdx > 0 ? h1BodyLines.slice(0, firstToggleIdx).join("\n") : "";
-        const toggleText = firstToggleIdx >= 0 ? h1BodyLines.slice(firstToggleIdx).join("\n") : h1Body;
-        if (preText.trim()) output.push(<div key={"h1-pre-" + i}><MiniMarkdown content={preText} color={sectionColor} /></div>);
-        if (toggleText.trim()) output.push(<div key={"h1-body-" + i}>{renderContent(toggleText)}</div>);
+        const h1FirstToggleIdx = h1BodyLines.findIndex(l => l.trim().match(/^- %%/));
+        const h1PreText = h1FirstToggleIdx > 0 ? h1BodyLines.slice(0, h1FirstToggleIdx).join("\n") : "";
+        const h1ToggleText = h1FirstToggleIdx >= 0 ? h1BodyLines.slice(h1FirstToggleIdx).join("\n") : h1Body;
+        if (h1PreText.trim()) output.push(<div key={"h1-pre-" + i}><MiniMarkdown content={h1PreText} color={sectionColor} /></div>);
+        if (h1ToggleText.trim()) output.push(<div key={"h1-body-" + i}>{renderContent(h1ToggleText)}</div>);
         i++;
         continue;
       }
@@ -325,7 +327,7 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
         const bodyText = childContent.join("\n");
         // split body into pre-toggle text and toggle items
         const bodyLines = bodyText.split("\n");
-        const firstToggleIdx = bodyLines.findIndex(l => l.match(/^- %%/));
+        const firstToggleIdx = bodyLines.findIndex(l => l.trim().match(/^- %%/));
         const preText = firstToggleIdx > 0 ? bodyLines.slice(0, firstToggleIdx).join("\n") : "";
         const toggleText = firstToggleIdx >= 0 ? bodyLines.slice(firstToggleIdx).join("\n") : bodyText;
         output.push(
@@ -334,6 +336,7 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
               color: sectionColor, fontSize: 17, fontWeight: 700,
               borderBottom: `2px solid ${sectionColor}33`,
               paddingBottom: 6, marginTop: 20, marginBottom: 10,
+              unicodeBidi: "plaintext",
             }}>{sec.text}</h2>
             {preText.trim() && <MiniMarkdown content={preText} color={sectionColor} />}
             {renderContent(toggleText)}
@@ -346,7 +349,7 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
       if (sec.type === "h3") {
         const bodyText = sec.children.join("\n");
         const bodyLines = bodyText.split("\n");
-        const firstToggleIdx = bodyLines.findIndex(l => l.match(/^- %%/));
+        const firstToggleIdx = bodyLines.findIndex(l => l.trim().match(/^- %%/));
         const preText = firstToggleIdx > 0 ? bodyLines.slice(0, firstToggleIdx).join("\n") : "";
         const toggleText = firstToggleIdx >= 0 ? bodyLines.slice(firstToggleIdx).join("\n") : bodyText;
         output.push(
@@ -356,6 +359,7 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
               marginTop: 16, marginBottom: 8,
               paddingLeft: 10,
               borderLeft: `3px solid ${sectionColor}66`,
+              unicodeBidi: "plaintext",
             }}>{sec.text}</h3>
             {preText.trim() && <MiniMarkdown content={preText} color={sectionColor} />}
             {toggleText.trim() && renderContent(toggleText)}
