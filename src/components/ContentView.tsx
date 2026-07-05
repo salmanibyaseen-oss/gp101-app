@@ -304,7 +304,12 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
           }}>{sec.text}</h1>
         );
         const h1Body = sec.children.join("\n");
-        if (h1Body.trim()) output.push(<div key={"h1-body-" + i}>{renderContent(h1Body)}</div>);
+        const h1BodyLines = h1Body.split("\n");
+        const firstToggleIdx = h1BodyLines.findIndex(l => l.trim().match(/^- %%/));
+        const preText = firstToggleIdx > 0 ? h1BodyLines.slice(0, firstToggleIdx).join("\n") : "";
+        const toggleText = firstToggleIdx >= 0 ? h1BodyLines.slice(firstToggleIdx).join("\n") : h1Body;
+        if (preText.trim()) output.push(<div key={"h1-pre-" + i}><MiniMarkdown content={preText} color={sectionColor} /></div>);
+        if (toggleText.trim()) output.push(<div key={"h1-body-" + i}>{renderContent(toggleText)}</div>);
         i++;
         continue;
       }
