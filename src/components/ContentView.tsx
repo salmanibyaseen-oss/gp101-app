@@ -290,7 +290,7 @@ export function ContentView({ topic, breadcrumb }: ContentViewProps) {
       .catch(() => {});
   }, [topic.slug]);
 
-  const sections = parseIntoSections(topic.content);
+  const sections = parseIntoSections(topic.content ?? "");
 
   const renderContent = (bodyText: string) => {
     if (!bodyText.trim()) return null;
