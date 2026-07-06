@@ -2,7 +2,7 @@
 export const dynamic = 'force-dynamic';
 import { Sidebar } from "@/components/Sidebar";
 import { OnlineStatus } from "@/components/OnlineStatus";
-import { content } from "@/lib/content";
+import { getNavigationSections } from "@/lib/content";
 import { cookies } from "next/headers";
 import { verifyToken } from "@/lib/auth";
 
@@ -18,7 +18,7 @@ export default function ContentLayout({ children }: { children: React.ReactNode 
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: "#f6f9fc", fontFamily: "'Segoe UI', Arial, sans-serif" }}>
-      <Sidebar sections={content.sections} isAdmin={user?.isAdmin} />
+      <Sidebar sections={getNavigationSections()} isAdmin={user?.isAdmin} />
       <div className="flex-1 flex flex-col overflow-hidden">
 
         {/* Header — نفس ثيم الداشبورد */}
