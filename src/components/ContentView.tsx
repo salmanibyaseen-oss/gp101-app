@@ -21,6 +21,25 @@ interface ContentViewProps {
   breadcrumb: { section: string; subsection: string } | null;
 }
 
+// ── Dedent helper ──────────────────────────────────────────────────────────
+// Removes the common leading whitespace from every non-blank line, while
+// preserving *relative* indentation between lines. This prevents 4+ space
+// indented content (e.g. under ### headings) from being misread by
+// CommonMark as a code block, which was silently swallowing tables and
+// bullet lists that appear under level-3 headings.
+function dedent(text: string): string {
+  const lines = text.split("\n");
+  let minIndent = Infinity;
+  for (const line of lines) {
+    if (line.trim() === "") continue;
+    const match = line.match(/^( *)/);
+    const indent = match ? match[1].length : 0;
+    if (indent < minIndent) minIndent = indent;
+  }
+  if (minIndent === Infinity || minIndent === 0) return text;
+  return lines.map((l) => (l.trim() === "" ? l : l.slice(minIndent))).join("\n");
+}
+
 // ── Collapsible Section Component ─────────────────────────────────────────
 function CollapsibleSection({
   title, children, color, level = 2, defaultOpen = false,
@@ -138,6 +157,7 @@ function parseTopLevelToggles(content: string): Array<{ title: string; body: str
 
 // ── Mini Markdown renderer ────────────────────────────────────────────────
 function MiniMarkdown({ content, color }: { content: string; color: string }) {
+  const normalized = dedent(content);
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -226,7 +246,7 @@ function MiniMarkdown({ content, color }: { content: string; color: string }) {
         },
       }}
     >
-      {content}
+      {normalized}
     </ReactMarkdown>
   );
 }
