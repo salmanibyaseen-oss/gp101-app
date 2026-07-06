@@ -4,7 +4,7 @@ export interface Topic {
  title: string;
  slug: string;
  icon?: string;
- content: string;
+ content?: string;
  html?: string;
 }
 
@@ -24,34 +24,20 @@ export interface ContentData {
 
 export const content = contentData as ContentData;
 
-// نسخة خفيفة من الأقسام بدون محتوى المواضيع - للاستخدام في الـ Sidebar
-// لأن الـ Sidebar محتاج بس العناوين والـ slugs مش النص الكامل لكل موضوع
-export interface NavTopic {
-  title: string;
-  slug: string;
-  icon?: string;
-}
-export interface NavSubsection {
-  name: string;
-  topics: NavTopic[];
-}
-export interface NavSection {
-  name: string;
-  subsections: NavSubsection[];
-}
-
-export function getNavigationSections(): NavSection[] {
-  return content.sections.map((section) => ({
-    name: section.name,
-    subsections: section.subsections.map((sub) => ({
-      name: sub.name,
-      topics: sub.topics.map((t) => ({
-        title: t.title,
-        slug: t.slug,
-        icon: t.icon,
-      })),
-    })),
-  }));
+export function getNavigationSections(): Section[] {
+ return content.sections.map((section) => ({
+   name: section.name,
+   subsections: section.subsections.map((sub) => ({
+     name: sub.name,
+     topics: sub.topics.map((t) => ({
+       title: t.title,
+       slug: t.slug,
+       icon: t.icon,
+       // content متعمدين نسيبها من غير قيمة هنا — الـ Sidebar مش محتاجها
+       // وده بيوفر إننا مانبعتش كل نصوص الـ content.json (900KB) مع كل تحميل صفحة
+     })),
+   })),
+ }));
 }
 
 export function getAllSlugs(): string[] {
