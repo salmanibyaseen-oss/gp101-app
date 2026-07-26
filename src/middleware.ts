@@ -8,6 +8,10 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  if (pathname.startsWith("/api/cron")) {
+    return NextResponse.next();
+  }
+
   if (pathname.startsWith("/_next")) {
     return NextResponse.next();
   }
@@ -17,6 +21,7 @@ export function middleware(request: NextRequest) {
   }
 
   const token = request.cookies.get("auth_token")?.value;
+
   if (!token) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
@@ -24,9 +29,11 @@ export function middleware(request: NextRequest) {
   try {
     const base64 = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
     const payload = JSON.parse(atob(base64));
+
     if (!payload.userId) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
+
     if (pathname.startsWith("/admin") && !payload.isAdmin) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
