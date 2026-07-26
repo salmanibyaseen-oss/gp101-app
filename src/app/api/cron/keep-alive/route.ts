@@ -3,7 +3,6 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 export async function GET(request: Request) {
-  // تأكد إن الطلب جاي من Vercel Cron مش من حد تاني
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -11,11 +10,13 @@ export async function GET(request: Request) {
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY! // أو الـ anon key لو مفيش service role
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
-  // أي query خفيف بيلمس الداتابيز، مش لازم يرجع نتيجة مفيدة
-  const { error } = await supabase.from('YOUR_TABLE_NAME').select('id').limit(1);
+  const { error } = await supabase
+    .from('RegistrationRequest')
+    .select('id')
+    .limit(1);
 
   if (error) {
     console.error('Keep-alive query failed:', error);
