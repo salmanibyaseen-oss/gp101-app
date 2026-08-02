@@ -29,9 +29,12 @@ const SECTION_COLORS: Record<string, string> = {
 interface SidebarProps {
   sections: Section[];
   isAdmin?: boolean;
+  // لو true: السايدبار بيفضل مخفي دايمًا (على كل المقاسات) وميظهرش
+  // إلا لما يتفتح بالزرار — مش هيبقى ثابت على الشاشات الكبيرة زي المعتاد
+  alwaysDrawer?: boolean;
 }
 
-export function Sidebar({ sections, isAdmin }: SidebarProps) {
+export function Sidebar({ sections, isAdmin, alwaysDrawer }: SidebarProps) {
   const pathname = usePathname();
   const [openSections, setOpenSections] = useState<Set<string>>(
     new Set([sections[0]?.name])
@@ -236,7 +239,7 @@ export function Sidebar({ sections, isAdmin }: SidebarProps) {
         padding: "12px", borderTop: "1px solid rgba(255,255,255,0.08)",
         display: "flex", flexDirection: "column", gap: 8,
       }}>
-        <a
+        
           href="/dashboard"
           style={{
             display: "block", textAlign: "center", textDecoration: "none",
@@ -275,29 +278,31 @@ export function Sidebar({ sections, isAdmin }: SidebarProps) {
       <button
         onClick={() => setSidebarOpen(true)}
         style={{ background: "#0B1E3D" }}
-        className="lg:hidden fixed top-3 right-3 z-50 text-white p-2 rounded-lg"
+        className={`${alwaysDrawer ? "" : "lg:hidden"} fixed top-3 right-3 z-50 text-white p-2 rounded-lg`}
       >
         ☰
       </button>
 
       {sidebarOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          className={`${alwaysDrawer ? "" : "lg:hidden"} fixed inset-0 bg-black/50 z-40`}
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       <div
-        className={`lg:hidden fixed top-0 right-0 h-full w-72 z-50 transition-transform ${
+        className={`${alwaysDrawer ? "" : "lg:hidden"} fixed top-0 right-0 h-full w-72 z-50 transition-transform ${
           sidebarOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
         {sidebarContent}
       </div>
 
-      <div className="hidden lg:flex w-72 flex-shrink-0 h-full">
-        {sidebarContent}
-      </div>
+      {!alwaysDrawer && (
+        <div className="hidden lg:flex w-72 flex-shrink-0 h-full">
+          {sidebarContent}
+        </div>
+      )}
     </>
   );
 }
