@@ -1,10 +1,10 @@
-const CACHE_NAME = "gp101-v2";
-const CONTENT_CACHE = "gp101-content-v2";
+const CACHE_NAME = "gp101-v3";
+const CONTENT_CACHE = "gp101-content-v3";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
-      cache.addAll(["/login"])
+      cache.addAll(["/dashboard", "/login"])
     )
   );
   self.skipWaiting();
@@ -47,29 +47,38 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
   if (event.request.method !== "GET") return;
-  if (url.pathname.startsWith("/api/")) return;
+  if (url.pathname.startsWith("/api/") && url.pathname !== "/api/content") return;
 
-  // Network first for navigation
+  // Navigation (page loads / refreshes): stale-while-revalidate.
+  // Serve instantly from cache if we have it — no waiting on the network —
+  // then quietly refresh the cache in the background for next time.
   if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request)
-        .then((response) => {
-          const clone = response.clone();
-          caches.open(CONTENT_CACHE).then((cache) =>
-            cache.put(event.request, clone)
-          );
-          return response;
-        })
-        .catch(() =>
-          caches
-            .match(event.request)
-            .then((r) => r || caches.match("/login"))
-        )
+      caches.match(event.request).then((cached) => {
+        const networkUpdate = fetch(event.request)
+          .then((response) => {
+            if (response && response.ok) {
+              caches
+                .open(CONTENT_CACHE)
+                .then((c) => c.put(event.request, response.clone()));
+            }
+            return response;
+          })
+          .catch(() => null);
+
+        if (cached) {
+          event.waitUntil(networkUpdate);
+          return cached;
+        }
+
+        return networkUpdate.then((res) => res || caches.match("/login"));
+      })
     );
     return;
   }
 
-  // Cache first for static assets
+  // Cache first for static assets (filenames are content-hashed by Next.js,
+  // so a cached copy is always the correct copy)
   if (url.pathname.startsWith("/_next/static")) {
     event.respondWith(
       caches.match(event.request).then(
@@ -86,17 +95,25 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Network first for everything else
+  // Everything else (page data, images, etc.): stale-while-revalidate too
   event.respondWith(
-    fetch(event.request)
-      .then((res) => {
-        if (res.ok) {
-          caches
-            .open(CONTENT_CACHE)
-            .then((c) => c.put(event.request, res.clone()));
-        }
-        return res;
-      })
-      .catch(() => caches.match(event.request))
+    caches.match(event.request).then((cached) => {
+      const networkUpdate = fetch(event.request)
+        .then((res) => {
+          if (res && res.ok) {
+            caches
+              .open(CONTENT_CACHE)
+              .then((c) => c.put(event.request, res.clone()));
+          }
+          return res;
+        })
+        .catch(() => null);
+
+      if (cached) {
+        event.waitUntil(networkUpdate);
+        return cached;
+      }
+      return networkUpdate;
+    })
   );
 });
