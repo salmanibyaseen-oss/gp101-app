@@ -1,5 +1,5 @@
-const CACHE_NAME = "gp101-v3";
-const CONTENT_CACHE = "gp101-content-v3";
+const CACHE_NAME = "gp101-v4";
+const CONTENT_CACHE = "gp101-content-v4";
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -29,6 +29,13 @@ self.addEventListener("message", (event) => {
     const slugs = event.data.slugs || [];
     event.waitUntil(
       caches.open(CONTENT_CACHE).then(async (cache) => {
+        // نخزن بيانات التخصصات (المستخدمة في الداشبورد) صراحةً هنا
+        // عشان نضمن إنها اتخزنت فعلاً، مش بس نعتمد على الاعتراض العادي
+        try {
+          const contentRes = await fetch("/api/content");
+          if (contentRes.ok) await cache.put("/api/content", contentRes);
+        } catch {}
+
         for (const slug of slugs) {
           try {
             const res = await fetch(`/content/${slug}`);
