@@ -2,6 +2,7 @@
 // src/app/dashboard/page.tsx
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { Sidebar } from "@/components/Sidebar";
 
 const SECTION_ICONS: Record<string, string> = {
   "Medicine الباطنه": "🩺",
@@ -137,6 +138,7 @@ export default function DashboardPage() {
       style={{ minHeight: "100vh", background: "#f6f9fc", fontFamily: "'Segoe UI', Arial, sans-serif" }}
       onClick={() => { setShowResults(false); setShowNoBooks(false); }}
     >
+      <Sidebar sections={sections} isAdmin={userInfo.isAdmin} alwaysDrawer />
       {/* رسالة لا يوجد اشتراك كتب */}
       {showNoBooks && (
         <div
