@@ -19,6 +19,13 @@ export function OnlineStatus() {
         // Wait for SW to be active
         await navigator.serviceWorker.ready;
 
+        // لو المحتوى اتخزن قبل كده، ما تعملش الدورة دي تاني (مش محتاجين
+        // نعيد تحميل كل صفحة من جديد مع كل ريفريش)
+        if (localStorage.getItem("gp101_content_cached") === "1") {
+          setCached(true);
+          return;
+        }
+
         // Get all slugs from the page
         const res = await fetch("/api/slugs");
         if (res.ok) {
@@ -36,6 +43,7 @@ export function OnlineStatus() {
         if (e.data?.type === "CACHE_DONE") {
           setCaching(false);
           setCached(true);
+          localStorage.setItem("gp101_content_cached", "1");
         }
       });
     }
