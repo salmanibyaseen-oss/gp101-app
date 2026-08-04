@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
     if (!device) {
       const deviceCount = await prisma.device.count({ where: { userId: user.id } });
 
-      if (deviceCount >= MAX_DEVICES) {
+      // الأدمن مالوش حد أقصى للأجهزة
+      if (!user.isAdmin && deviceCount >= MAX_DEVICES) {
         return NextResponse.json(
           { error: `وصلت للحد الأقصى من الأجهزة (${MAX_DEVICES} أجهزة). تواصل مع الإدارة لإعادة التعيين` },
           { status: 403 }
