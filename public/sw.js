@@ -1,5 +1,13 @@
-const CACHE_NAME = "gp101-v4";
-const CONTENT_CACHE = "gp101-content-v4";
+const CACHE_NAME = "gp101-v6";
+const CONTENT_CACHE = "gp101-content-v6";
+
+// مسارات /api/ اللي مسموح نخزنها (باقي الـ /api/ زي /api/me يفضل network-only)
+function isCacheableApi(pathname) {
+  if (pathname === "/api/content") return true;
+  if (pathname === "/api/books") return true;
+  if (/^\/api\/books\/[^/]+\/view$/.test(pathname)) return true;
+  return false;
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -54,7 +62,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
   if (event.request.method !== "GET") return;
-  if (url.pathname.startsWith("/api/") && url.pathname !== "/api/content") return;
+  if (url.pathname.startsWith("/api/") && !isCacheableApi(url.pathname)) return;
 
   // Navigation (page loads / refreshes): stale-while-revalidate.
   // Serve instantly from cache if we have it — no waiting on the network —
