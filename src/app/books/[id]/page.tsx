@@ -10,6 +10,7 @@ export default function BookViewerPage() {
   const [error, setError] = useState("");
   const [title, setTitle] = useState("");
   const [progress, setProgress] = useState(0);
+  const [cachedOffline, setCachedOffline] = useState<boolean | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +80,17 @@ export default function BookViewerPage() {
         }
 
         setLoading(false);
+
+        // نتأكد إن الكتاب اتخزن فعلاً في الكاش (مش بس افتراض إنه اتخزن)
+        // سايبين شوية وقت للـ service worker يخلص كتابة الملف في الخلفية
+        setTimeout(() => {
+          if ("caches" in window) {
+            caches
+              .match(`/api/books/${id}/view?mode=pdf`)
+              .then((res) => setCachedOffline(!!res))
+              .catch(() => setCachedOffline(false));
+          }
+        }, 1500);
       } catch (e: any) {
         if (!cancelled) {
           setError(`خطأ: ${e?.message || String(e)}`);
@@ -97,6 +109,11 @@ export default function BookViewerPage() {
         <button onClick={() => router.push("/books")} style={{ background: "rgba(255,255,255,0.1)", border: "none", color: "#fff", borderRadius: 8, padding: "6px 12px", fontSize: 13, cursor: "pointer" }}>→ رجوع</button>
         <h1 style={{ fontSize: 15, fontWeight: 800, flex: 1 }}>{title || "الكتاب"}</h1>
         {loading && progress > 0 && <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>{progress}%</span>}
+        {!loading && !error && cachedOffline !== null && (
+          <span style={{ fontSize: 11, color: cachedOffline ? "#8bc34a" : "rgba(255,255,255,0.5)" }}>
+            {cachedOffline ? "✅ متاح أوفلاين" : "⚠️ لسه مش متخزن أوفلاين"}
+          </span>
+        )}
       </div>
 
       <div style={{ padding: "16px 8px", maxWidth: 900, margin: "0 auto" }}>
