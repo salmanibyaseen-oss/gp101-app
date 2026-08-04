@@ -1,5 +1,5 @@
-const CACHE_NAME = "gp101-v6";
-const CONTENT_CACHE = "gp101-content-v6";
+const CACHE_NAME = "gp101-v7";
+const CONTENT_CACHE = "gp101-content-v7";
 
 // مسارات /api/ اللي مسموح نخزنها (باقي الـ /api/ زي /api/me يفضل network-only)
 function isCacheableApi(pathname) {
