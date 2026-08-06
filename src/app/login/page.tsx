@@ -3,16 +3,41 @@
 import { useState } from "react";
 
 async function getFingerprint(): Promise<string> {
-  const ua = navigator.userAgent;
-  const screen = `${window.screen.width}x${window.screen.height}`;
-  const lang = navigator.language;
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const raw = `${ua}|${screen}|${lang}|${tz}`;
-  const encoder = new TextEncoder();
-  const data = encoder.encode(raw);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  try {
+    const ua = navigator.userAgent;
+    const screen = `${window.screen.width}x${window.screen.height}`;
+    const lang = navigator.language;
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const raw = `${ua}|${screen}|${lang}|${tz}`;
+
+    // Some in-app browsers (Facebook/Instagram WebViews) restrict or lack
+    // crypto.subtle. Fall back to a non-cryptographic hash instead of
+    // letting the whole login flow die silently.
+    if (!crypto?.subtle) {
+      return simpleHash(raw);
+    }
+
+    const encoder = new TextEncoder();
+    const data = encoder.encode(raw);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  } catch {
+    // crypto.subtle threw (seen in some restricted WebViews) — still don't
+    // block login, just fall back to a weaker fingerprint.
+    const ua = navigator.userAgent;
+    const screen = `${window.screen.width}x${window.screen.height}`;
+    return simpleHash(`${ua}|${screen}`);
+  }
+}
+
+function simpleHash(input: string): string {
+  let hash = 0;
+  for (let i = 0; i < input.length; i++) {
+    hash = (hash << 5) - hash + input.charCodeAt(i);
+    hash |= 0;
+  }
+  return `fallback-${Math.abs(hash)}`;
 }
 
 export default function LoginPage() {
@@ -36,15 +61,29 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "حدث خطأ");
-      } else {
-        if ("serviceWorker" in navigator) {
-          navigator.serviceWorker.register("/sw.js").catch(console.error);
-        }
-        window.location.href = data.user.isAdmin ? "/admin" : "/dashboard";
+        setLoading(false);
+        return;
       }
+
+      // Some in-app browsers (Facebook/Instagram) silently drop the
+      // Set-Cookie from the response. Verify the session actually stuck
+      // before redirecting, instead of navigating blind and bouncing
+      // back to /login with no visible feedback.
+      const meRes = await fetch("/api/me", { cache: "no-store" });
+      if (!meRes.ok) {
+        setError(
+          "تم تسجيل الدخول لكن المتصفح ده منع حفظ الجلسة. جرب تفتح الرابط في المتصفح الأساسي (دوس على ⋯ فوق ثم Open in Browser)."
+        );
+        setLoading(false);
+        return;
+      }
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/sw.js").catch(console.error);
+      }
+      window.location.href = data.user.isAdmin ? "/admin" : "/dashboard";
     } catch {
       setError("تعذر الاتصال بالسيرفر");
-    } finally {
       setLoading(false);
     }
   };
